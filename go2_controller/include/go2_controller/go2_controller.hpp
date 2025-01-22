@@ -61,9 +61,13 @@ namespace go2_controller
         //     const rclcpp_lifecycle::State &previous_state) override;
 
     protected:
+       
+
         std::vector<std::string> joint_names_;
         std::vector<std::string> command_interface_types_;
         std::vector<std::string> state_interface_types_;
+
+        pinocchio::Model  model;
 
         double q[12];
         double dq[12];

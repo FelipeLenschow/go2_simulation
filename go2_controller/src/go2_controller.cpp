@@ -18,17 +18,22 @@
 namespace go2_controller
 {
 
-    Go2Controller::Go2Controller() : controller_interface::ControllerInterface(), joint_names_({})
+    Go2Controller::Go2Controller() 
+    : controller_interface::ControllerInterface(), 
+    joint_names_({}),
+    model()
     {
+        std::cout<<"Name from URDF"<< std::endl;
        
         const auto package_share_path = ament_index_cpp::get_package_share_directory("go2_description");
         const auto urdf_path = std::filesystem::path(package_share_path) / "urdf" / "go2.xacro.urdf";
 
         // Create a set of Pinocchio models and data.
-        pinocchio::Model model;
+        // pinocchio::Model model;
         pinocchio::urdf::buildModel(urdf_path, model);
         
         std::cout<<model.name<<std::endl;
+        std::cout<<model.nq<<std::endl;
     }
 
     controller_interface::CallbackReturn Go2Controller::on_init()
@@ -180,27 +185,6 @@ namespace go2_controller
             dqr[index] = 0;
         }
 
-        // std::cout << Kp_gain << std::endl;
-        // std::cout << Kd_gain << std::endl;
-        // Initial joits reference
-
-        // Configure the PD controntroller and joints references
-
-        // Create the topic where the joints reference are published
-
-        // auto callback_refs = [this](const std::shared_ptr<lowCmd> msg) -> void
-        // {
-        //     // std::lock_guard<std::mutex> lock(this->mutex_controller);
-        //     for (int index = 0; index < 12; ++index)
-        //     {
-        //         qr[index] = msg->motor_cmd[index].q;
-        //         dqr[index] = msg->motor_cmd[index].dq;
-        //         kd[index] = msg->motor_cmd[index].kd;
-        //         kp[index] = msg->motor_cmd[index].kp;
-        //         tau[index] = msg->motor_cmd[index].tau;
-        //     }
-        // };
-
         joints_reference_subscriber_ = get_node()->create_subscription<lowCmd>(
             "~/LowReferences", rclcpp::SystemDefaultsQoS(), 
             [this](const std::shared_ptr<lowCmd> msg) -> void
@@ -290,33 +274,17 @@ namespace go2_controller
     {
 
         const auto logger = get_node()->get_logger();
+
         // At joint_state_interface_ are all the joints interfaces.
         // They separate by the name and type:
         //   0 - Position
         //   1 - Velocity
         //   2 - Effort
 
-        // At joint_command_interface_ are all the joints commands.
-        // Only effort command is allowed (see allowed_command_interface_types_)
-        // std::cout << "-----------" << std::endl;
-
-        // for (int j = 0; j < 12; j++)
-        // {
-        //     qr[j] = (1 - x) * _startPos[j] + x * _targetPos_1[j];
-        // }
-
-        // if (x >= 1)
-        //     x = 1;
-        // else
-        //     x += 0.0001;
-
         std::lock_guard<std::mutex> lock(this->mutex_controller);
 
         for (auto index{0}; index < 12; index++)
         {
-            // std::cout << joint_state_interface_[0][0].get_interface_name() << std::endl;
-            // get the joint position
-            // std::count << joint_state_interface_[0][index].get().get_value() << std::endl;
 
             q[index] = joint_state_interface_[0][index].get().get_value();
 
@@ -329,14 +297,9 @@ namespace go2_controller
             q_e[index] = qr[index] - q[index];
             dq_e[index] = dqr[index] - dq[index];
 
-            // commanded_effort[index] = pid_controller[index].computeCommand(q_e[index], dq_e[index], dt);
-
             commanded_effort[index] = kp[index] * q_e[index] + kd[index] * dq_e[index];
-
-            // joint_command_interface_[0][index].get().set_value(commanded_effort[index] + tau[index]);
             joint_command_interface_[0][index].get().set_value(commanded_effort[index]);
 
-            // effort[index] = joint_state_interface_[2][index].get().get_value();
         }
 
         publish_joint_control_signal();
