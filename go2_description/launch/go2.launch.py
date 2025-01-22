@@ -74,6 +74,18 @@ def generate_launch_description():
         arguments=["/imu@sensor_msgs/msg/Imu@gz.msgs.IMU"],
     )    
 
+    bridge_params = os.path.join(get_package_share_directory('go2_description'), 'config', 'gz_bridge.yaml')
+    
+    ros_gz_bridge = Node(
+        package="ros_gz_bridge",
+        executable="parameter_bridge",
+        arguments=[
+            '--ros-args',
+            '-p',
+            f'config_file:={bridge_params}',
+        ],
+    )
+
     return LaunchDescription([
         # Launch gazebo environment
         IncludeLaunchDescription(
@@ -102,4 +114,5 @@ def generate_launch_description():
             default_value=use_sim_time,
             description='If true, use simulated clock'),
             bridge,
+            ros_gz_bridge,
     ])

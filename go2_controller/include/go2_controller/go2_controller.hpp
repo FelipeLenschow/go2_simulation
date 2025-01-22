@@ -9,8 +9,12 @@
 #include "std_msgs/msg/float64_multi_array.hpp"
 
 #include <filesystem>
-#include "ament_index_cpp/get_package_share_directory.hpp"
+#include <pinocchio/algorithm/model.hpp>
+#include <pinocchio/algorithm/rnea.hpp>
 #include "pinocchio/parsers/urdf.hpp"
+
+#include "ament_index_cpp/get_package_share_directory.hpp"
+
 
 
 namespace go2_controller
@@ -60,6 +64,8 @@ namespace go2_controller
         // controller_interface::CallbackReturn on_shutdown(
         //     const rclcpp_lifecycle::State &previous_state) override;
 
+        void CompG();
+
     protected:
        
 
@@ -68,6 +74,7 @@ namespace go2_controller
         std::vector<std::string> state_interface_types_;
 
         pinocchio::Model  model;
+        std::shared_ptr<pinocchio::Data> data;
 
         double q[12];
         double dq[12];

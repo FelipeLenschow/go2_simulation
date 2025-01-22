@@ -31,9 +31,11 @@ namespace go2_controller
         // Create a set of Pinocchio models and data.
         // pinocchio::Model model;
         pinocchio::urdf::buildModel(urdf_path, model);
-        
+                
         std::cout<<model.name<<std::endl;
         std::cout<<model.nq<<std::endl;
+
+        data = std::make_shared<pinocchio::Data>(model);
     }
 
     controller_interface::CallbackReturn Go2Controller::on_init()
@@ -255,7 +257,7 @@ namespace go2_controller
         // TODO(anyone): How to halt when using effort commands?
         for (auto index = 0ul; index < joint_names_.size(); ++index)
         {
-            joint_command_interface_[0][index].get().set_value(
+            (void)joint_command_interface_[0][index].get().set_value(
                 joint_command_interface_[2][index].get().get_value());
         }
 
@@ -282,6 +284,7 @@ namespace go2_controller
         //   2 - Effort
 
         std::lock_guard<std::mutex> lock(this->mutex_controller);
+        this->CompG();
 
         for (auto index{0}; index < 12; index++)
         {
@@ -298,13 +301,37 @@ namespace go2_controller
             dq_e[index] = dqr[index] - dq[index];
 
             commanded_effort[index] = kp[index] * q_e[index] + kd[index] * dq_e[index];
-            joint_command_interface_[0][index].get().set_value(commanded_effort[index]);
+            (void)joint_command_interface_[0][index].get().set_value(commanded_effort[index]);
 
         }
 
         publish_joint_control_signal();
 
         return controller_interface::return_type::OK;
+    }
+
+    void Go2Controller::CompG()
+    {
+        // // Configuração do robô (vetor de posições das juntas)
+        // Eigen::VectorXd q = Eigen::VectorXd::Zero(model.nq); // Configuração neutra (todas as juntas em 0)
+
+        // // Vetores de velocidade e aceleração (zeros para cálculo apenas da gravidade)
+        // Eigen::VectorXd v = Eigen::VectorXd::Zero(model.nv);
+        // Eigen::VectorXd a = Eigen::VectorXd::Zero(model.nv);
+
+        // // Computar o vetor de gravidade generalizado
+        // pinocchio::computeGeneralizedGravity(model, *data, q);
+
+        // Loop para calcular e exibir o impacto da gravidade em cada junta
+        std::cout << "Impacto da gravidade em cada junta:" << std::endl;
+        for (int index = 0; index < model.nq; index++)
+        {
+            std::cout << "Junta " << index << ": " << data->g[index] << std::endl;
+            // Exibir o valor da gravidade para a junta específica
+            std::cout << "Gravidade generalizada na junta " << index << ": "
+                      << data->g[index] << std::endl;
+            tau[index] = data->g[index];
+        }
     }
 }
 #include <pluginlib/class_list_macros.hpp>
