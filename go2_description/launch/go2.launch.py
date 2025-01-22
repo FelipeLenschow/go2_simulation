@@ -31,14 +31,6 @@ def generate_launch_description():
     )
     robot_description = {'robot_description':robot_description_content}
 
-    # robot_controllers = PathJoinSubstitution(
-    #     [
-    #         FindPackageShare('gz_ros2_control_demos'),
-    #         'config',
-    #         'diff_drive_controller_velocity.yaml',
-    #     ]
-    # )
-
     node_robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -93,12 +85,6 @@ def generate_launch_description():
         RegisterEventHandler(
             event_handler=OnProcessExit(
                 target_action=gz_spawn_entity,
-                on_exit=[joint_state_broadcaster_spawner],
-            )
-        ),
-        RegisterEventHandler(
-            event_handler=OnProcessExit(
-                target_action=joint_state_broadcaster_spawner,
                 on_exit=[go2_controller_spawner],
             )
         ),

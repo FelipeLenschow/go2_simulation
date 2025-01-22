@@ -1410,10 +1410,5 @@
     <topic>imu</topic>
   </sensor>
 </gazebo>
-<gazebo>
-  <plugin filename="libgz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
-  <parameters>$(find go2_description)/config/go2.yaml</parameters>
-  </plugin>
-</gazebo>
   
 </robot>

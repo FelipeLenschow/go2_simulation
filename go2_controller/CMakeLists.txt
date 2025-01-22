@@ -14,7 +14,8 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(go2_interfaces REQUIRED)
 find_package(std_msgs REQUIRED)
-
+find_package(pinocchio REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -72,6 +73,8 @@ ament_target_dependencies(${PROJECT_NAME}
     rclcpp_lifecycle
     go2_interfaces
    )
+
+  target_link_libraries(${PROJECT_NAME} pinocchio::pinocchio)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

@@ -20,7 +20,15 @@ namespace go2_controller
 
     Go2Controller::Go2Controller() : controller_interface::ControllerInterface(), joint_names_({})
     {
-        // std::cout << "hey1" << std::endl;
+       
+        const auto package_share_path = ament_index_cpp::get_package_share_directory("go2_description");
+        const auto urdf_path = std::filesystem::path(package_share_path) / "urdf" / "go2.xacro.urdf";
+
+        // Create a set of Pinocchio models and data.
+        pinocchio::Model model;
+        pinocchio::urdf::buildModel(urdf_path, model);
+        
+        std::cout<<model.name<<std::endl;
     }
 
     controller_interface::CallbackReturn Go2Controller::on_init()
