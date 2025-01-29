@@ -14,6 +14,7 @@
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
+#include <pinocchio/algorithm/center-of-mass.hpp>
 
 namespace go2_controller
 {
@@ -32,15 +33,37 @@ namespace go2_controller
         // pinocchio::Model model;
         pinocchio::urdf::buildModel(urdf_path, model);
                 
-        std::cout<<model.name<<std::endl;
-        std::cout<<model.nq<<std::endl;
-
+        // std::cout<<model.name<<std::endl;
+        // std::cout<<model.nbodies<<std::endl;
         data = std::make_shared<pinocchio::Data>(model);
-    }
+        // Eigen::VectorXd q(model.nq);
+
+        // for(int i=0; i<model.nframes; i++)
+        // {
+        //     std::cout<<model.frames[i]<<std::endl;
+        //     std::cout<<"---"<<std::endl;
+        // }
+        gravidade.resize(3);
+        q.resize(12);
+        dq.resize(12);
+        kp.resize(12);
+        kd.resize(12);
+        ki.resize(12);
+        tau.resize(12);
+        tauG.resize(12);
+        q_e.resize(12);  
+        qi_e.resize(12); 
+        dq_e.resize(12);   
+        qr.resize(12);   
+        dqr.resize(12); 
+        effort.resize(12);   
+        commanded_effort.resize(12); 
+                     
+
+}
 
     controller_interface::CallbackReturn Go2Controller::on_init()
     {
-        // std::cout << "hey2" << std::endl;
         try
         {
             auto_declare<std::vector<std::string>>("joints", joint_names_);
@@ -49,9 +72,13 @@ namespace go2_controller
 
             auto_declare<double>("gain.Kp", 100.0);
             auto_declare<double>("gain.Kd", 10.0);
+            auto_declare<double>("gain.Ki", 5.0);
             auto_declare<std::vector<double>>("joints_references", {});
 
             auto_declare<double>("robot_states_feedabck_rate", 100.0);
+
+             gravidade[0] = gravidade[1] = 0;
+             gravidade[2] = -9.80665;
         }
         catch (const std::exception &e)
         {
@@ -65,7 +92,6 @@ namespace go2_controller
     controller_interface::InterfaceConfiguration
     Go2Controller::command_interface_configuration() const
     {
-        // std::cout << "hey3" << std::endl;
         controller_interface::InterfaceConfiguration command_interfaces_config;
         command_interfaces_config.type = controller_interface::interface_configuration_type::INDIVIDUAL;
         command_interfaces_config.names.reserve(joint_names_.size() * command_interface_types_.size());
@@ -82,7 +108,6 @@ namespace go2_controller
     controller_interface::InterfaceConfiguration
     Go2Controller::state_interface_configuration() const
     {
-        // std::cout << "hey4" << std::endl;
         controller_interface::InterfaceConfiguration state_interfaces_config;
         state_interfaces_config.type = controller_interface::interface_configuration_type::INDIVIDUAL;
         state_interfaces_config.names.reserve(joint_names_.size() * state_interface_types_.size());
@@ -100,7 +125,6 @@ namespace go2_controller
     Go2Controller::on_configure(
         const rclcpp_lifecycle::State &)
     {
-        // std::cout << "hey5" << std::endl;
         const auto logger = get_node()->get_logger();
 
         joint_names_ = get_node()->get_parameter("joints").as_string_array();
@@ -254,7 +278,6 @@ namespace go2_controller
         const auto logger = get_node()->get_logger();
         RCLCPP_INFO(logger, "Deactiveting impedance controller");
 
-        // TODO(anyone): How to halt when using effort commands?
         for (auto index = 0ul; index < joint_names_.size(); ++index)
         {
             (void)joint_command_interface_[0][index].get().set_value(
@@ -298,9 +321,10 @@ namespace go2_controller
 
             // std::cout << qr[index] << std::endl;
             q_e[index] = qr[index] - q[index];
+            qi_e[index] = qi_e[index] + q_e[index];
             dq_e[index] = dqr[index] - dq[index];
 
-            commanded_effort[index] = kp[index] * q_e[index] + kd[index] * dq_e[index];
+            commanded_effort[index] = kp[index] * q_e[index] + kd[index] * dq_e[index] - tauG[index];
             (void)joint_command_interface_[0][index].get().set_value(commanded_effort[index]);
 
         }
@@ -323,15 +347,43 @@ namespace go2_controller
         // pinocchio::computeGeneralizedGravity(model, *data, q);
 
         // Loop para calcular e exibir o impacto da gravidade em cada junta
-        std::cout << "Impacto da gravidade em cada junta:" << std::endl;
-        for (int index = 0; index < model.nq; index++)
-        {
-            std::cout << "Junta " << index << ": " << data->g[index] << std::endl;
-            // Exibir o valor da gravidade para a junta específica
-            std::cout << "Gravidade generalizada na junta " << index << ": "
-                      << data->g[index] << std::endl;
-            tau[index] = data->g[index];
-        }
+        // std::cout << "Impacto da gravidade em cada junta:" << std::endl;
+        // for (int index = 0; index < model.nq; index++)
+        // {
+        //     std::cout << "Junta " << index << ": " << data->g[index] << std::endl;
+        //     // Exibir o valor da gravidade para a junta específica
+        //     std::cout << "Gravidade generalizada na junta " << index << ": "
+        //               << data->g[index] << std::endl;
+        //     tauG[index] = data->g[index];
+        // }
+        // calculando jacobiano do centro de massa função jacobianCenterOfMass
+
+         // Inicializar o vetor de posições e velocidades
+
+        Eigen::VectorXd q = Eigen::VectorXd::Zero(model.nq); // posições
+        Eigen::VectorXd v = Eigen::VectorXd::Zero(model.nv); // velocidades
+
+         // Calcular o Jacobiano do centro de massa
+        // auto com = pinocchio::centerOfMass(model, *data, q);
+        Eigen::MatrixXd Jcom = jacobianCenterOfMass(model, *data, q);
+       // std::cout<<Jcom<<std::endl;
+        tauG = Jcom.transpose()*gravidade;
+
+
+
+        // Eigen::MatrixXd Jcom =pinocchio::jacobianCenterOfMass(model, data, q);
+
+        // // Exibir o Jacobiano do centro de massa
+        // std::cout << "Jacobiano do Centro de Massa:\n" << J << std::endl;
+
+        // for (int index = 0; index < model.nq; index++)
+        // {
+        //      pinocchio::jacobianCenterOfMass(model, data, q, J);
+        //      // Exibir o Jacobiano do centro de massa
+        //     std::cout << "Jacobiano do Centro de Massa:\n" << J << std::endl;
+        //     tauG[index] = data->g[index];
+        // }
+
     }
 }
 #include <pluginlib/class_list_macros.hpp>

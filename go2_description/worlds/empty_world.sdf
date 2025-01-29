@@ -1,4 +1,3 @@
-<?xml version="1.0"?>
 <sdf version="1.6">
   <world name="default">
     <plugin
@@ -66,7 +65,11 @@
           <contact_surface_layer>0.01000</contact_surface_layer>
         </constraints>
       </ode>
+
+   <!-- Configuração de gravidade -->
+  <!-- <gravity>0 0 0</gravity> --> 
     </physics>
 
+  
   </world>
 </sdf>

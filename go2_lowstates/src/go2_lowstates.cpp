@@ -15,6 +15,10 @@
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
 
+#include <geometry_msgs/msg/quaternion.hpp>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+
 namespace go2_lowstates
 {
 
@@ -103,6 +107,10 @@ namespace go2_lowstates
             return ss_interfaces.str();
         };
 
+        RCLCPP_INFO(
+            logger, "State interfaces are [%s].",
+            get_interface_list(state_interface_types_).c_str());
+
         imu_subscriber_ = get_node()->create_subscription<imuStates>(
             "imu", rclcpp::SystemDefaultsQoS(),
             [this](const std::shared_ptr<imuStates> msg) -> void
@@ -119,24 +127,49 @@ namespace go2_lowstates
                 lowStates_msg.imu_state.accelerometer[0] = msg->angular_velocity.x;
                 lowStates_msg.imu_state.accelerometer[1] = msg->angular_velocity.y;
                 lowStates_msg.imu_state.accelerometer[2] = msg->angular_velocity.z;
+
+                tf2::Quaternion q(
+                    lowStates_msg.imu_state.quaternion[0],
+                    lowStates_msg.imu_state.quaternion[1],
+                    lowStates_msg.imu_state.quaternion[2],
+                    lowStates_msg.imu_state.quaternion[3]);
+                tf2::Matrix3x3 m(q);
+                double roll, pitch, yaw;
+                m.getRPY(roll, pitch, yaw);
+
+                lowStates_msg.imu_state.rpy[0] = roll;
+                lowStates_msg.imu_state.rpy[1] = pitch;
+                lowStates_msg.imu_state.rpy[2] = yaw;
+            });
+
+        effort_subscriber_ = get_node()->create_subscription<effortstates>(
+            "/go2_controller/LowCommands", rclcpp::SystemDefaultsQoS(),
+            [this](const std::shared_ptr<effortstates> msg) -> void
+            {
+                std::lock_guard<std::mutex> lock(this->mutex_controller);
+                for (auto index{0}; index < 12; index++)
+                {
+                    tau[index] = msg->data[index];
+                }
             });
 
         go2_lowstates_publisher = get_node()->create_publisher<lowStates>("go2_lowstates/LowStates", 10);
-
         return CallbackReturn::SUCCESS;
     }
 
     controller_interface::CallbackReturn Go2Lowstates::on_activate(const rclcpp_lifecycle::State &)
     {
-
         const auto logger = get_node()->get_logger();
+
         RCLCPP_INFO(logger, "Activing Low State node");
 
         for (const auto &interface : state_interface_types_)
         {
             auto it =
                 std::find(allowed_state_interface_types_.begin(), allowed_state_interface_types_.end(), interface);
+
             auto index = std::distance(allowed_state_interface_types_.begin(), it);
+
             if (!controller_interface::get_ordered_interfaces(
                     state_interfaces_, joint_names_, interface, joint_state_interface_[index]))
             {
@@ -161,15 +194,35 @@ namespace go2_lowstates
     controller_interface::return_type Go2Lowstates::update(
         const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
     {
-
         const auto logger = get_node()->get_logger();
-
         std::lock_guard<std::mutex> lock(this->mutex_controller);
+        Go2Lowstates::get_joints_info();
 
         // publish_joint_control_signal();
         go2_lowstates_publisher->publish(lowStates_msg);
 
         return controller_interface::return_type::OK;
+    }
+
+    void Go2Lowstates::get_joints_info()
+    {
+        // std::lock_guard<std::mutex> lock(this->mutex_controller);
+
+        for (auto index{0}; index < 12; index++)
+        {
+            // get the joint position
+
+            lowStates_msg.motor_state[index].q = joint_state_interface_[0][index].get().get_value();
+
+            // get the joint velocity
+            lowStates_msg.motor_state[index].dq = joint_state_interface_[1][index].get().get_value();
+
+            // get the joint acceleration
+            // lowStates_msg.motor_state[index].ddq = joint_state_interface_[2][index].get().get_value();
+
+            // get the joint effort
+            lowStates_msg.motor_state[index].tau_est = tau[index];
+        }
     }
 }
 #include <pluginlib/class_list_macros.hpp>

@@ -12,8 +12,10 @@ namespace go2_lowstates
 {
     using lowStates = go2_interfaces::msg::LowState;
     using imuStates = sensor_msgs::msg::Imu;
+    using effortstates = std_msgs::msg::Float64MultiArray;
+    using footforce =
 
-    class Go2Lowstates : public controller_interface::ControllerInterface
+        class Go2Lowstates : public controller_interface::ControllerInterface
     {
     public:
         // GO2_LOWSTATES_PUBLIC
@@ -56,6 +58,9 @@ namespace go2_lowstates
         // controller_interface::CallbackReturn on_shutdown(
         //     const rclcpp_lifecycle::State &previous_state) override;
 
+    private:
+        void get_joints_info();
+
     protected:
         std::vector<std::string> joint_names_;
         std::vector<std::string> command_interface_types_;
@@ -93,17 +98,9 @@ namespace go2_lowstates
 
         lowStates lowStates_msg;
 
-        rclcpp::Subscription<imuStates>::SharedPtr imu_subscriber_;
         rclcpp::Publisher<lowStates>::SharedPtr go2_lowstates_publisher;
-
-        // void publish_joint_control_signal()
-        // {
-        //     auto message = std_msgs::msg::Float64MultiArray();
-        //     for(long unsigned int i{0}; i < sizeof(commanded_effort)/sizeof(double); i++)
-        //         message.data.push_back(commanded_effort[i]);
-
-        //     joints_control_publisher_->publish(message);
-        // }
+        rclcpp::Subscription<imuStates>::SharedPtr imu_subscriber_;       // subscrevendo as informações do tipo imuStates no ponteiro imu_subscriber_
+        rclcpp::Subscription<effortstates>::SharedPtr effort_subscriber_; // subscrevendo as informações do tipo std_msgs.... no ponteiro effort_subscriber_
     };
 
 }

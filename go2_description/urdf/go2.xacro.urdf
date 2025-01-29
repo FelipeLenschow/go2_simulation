@@ -1,6 +1,16 @@
 <?xml version="1.0"?>
 <robot name="go2" xmlns:xacro="http://ros.org/wiki/xacro">
-  <link name="base_link">
+
+  <link name="world" /> 
+  <link name="base_link"/> 
+
+  <joint name="fixed" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 1"/>
+  </joint>
+
+  <link name="torso">
     <inertial>
       <origin
         xyz="0.021112 0 -0.005366"
@@ -36,10 +46,19 @@
       </geometry>
     </collision>
   </link>
-  <link
+
+  <joint name="joint_fixed_" type="fixed">
+    <parent link="base_link"/>
+    <child link="torso"/>
+    <origin xyz="0 0 0.5"/>
+    <!-- <limit effort="30" upper="3.14" lower="1" velocity="1.0"/> -->
+  </joint>
+
+  <!-- <link
     name="odom">
-  </link>
-  <joint
+  </link> -->
+
+  <!-- <joint
     name="odom_joint"
     type="fixed">
     <origin
@@ -48,17 +67,18 @@
     <parent
       link="odom" />
     <child
-      link="base_link" />
-  </joint>
+      link="torso" />
+  </joint> -->
 
-  <joint name="base_footprint_joint" type="fixed">
-    <parent link="base_link"/>
+  <!-- <joint name="base_footprint_joint" type="fixed">
+    <parent link="torso"/>
     <child link="base_footprint"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
   <link name="base_footprint">
-    </link>
-  <link
+    </link> -->
+  
+  <!-- <link
     name="map">
   </link>
   <joint
@@ -71,7 +91,8 @@
       link="map" />
     <child
       link="odom" />
-  </joint>
+  </joint> -->
+  
   <link
     name="Head_upper">
     <inertial>
@@ -97,6 +118,7 @@
       </geometry>
     </collision>
   </link>
+  
   <joint
     name="Head_upper_joint"
     type="fixed" dont_collapse="true">
@@ -104,12 +126,13 @@
       xyz="0.285 0 0.01"
       rpy="0 0 0" />
     <parent
-      link="base_link" />
+      link="torso" />
     <child
       link="Head_upper" />
     <axis
       xyz="0 0 0" />
   </joint>
+  
   <link name="front_camera">
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -127,12 +150,14 @@
       </geometry>
     </collision>
   </link>
+  
   <joint name="front_camera_joint" type="fixed">
     <origin xyz="0.045 0 0.03" rpy="-1.5708 0 -1.5708" />
     <parent link="Head_upper" />
     <child link="front_camera" />
     <axis xyz="0 0 0" />
   </joint>  
+  
   <link
     name="Head_lower">
     <inertial>
@@ -158,6 +183,7 @@
       </geometry>
     </collision>
   </link>
+  
   <joint
     name="Head_lower_joint"
     type="fixed" dont_collapse="true">
@@ -171,6 +197,7 @@
     <axis
       xyz="0 0 0" />
   </joint>
+  
   <link
     name="FL_hip">
     <inertial>
@@ -208,6 +235,7 @@
       </geometry>
     </collision>
   </link>
+  
   <joint
     name="FL_hip_joint"
     type="revolute">
@@ -215,7 +243,7 @@
       xyz="0.1934 0.0465 0"
       rpy="0 0 0" />
     <parent
-      link="base_link" />
+      link="torso" />
     <child
       link="FL_hip" />
     <axis
@@ -226,6 +254,7 @@
       effort="23.7"
       velocity="30.1" />
   </joint>
+  
   <link
     name="FL_thigh">
     <inertial>
@@ -263,6 +292,7 @@
       </geometry>
     </collision>
   </link>
+  
   <joint
     name="FL_thigh_joint"
     type="revolute">
@@ -281,6 +311,7 @@
       effort="23.7"
       velocity="30.1" />
   </joint>
+  
   <link
     name="FL_calf">
     <inertial>
@@ -318,6 +349,7 @@
       </geometry>
     </collision>
   </link>
+  
   <joint
     name="FL_calf_joint"
     type="revolute">
@@ -336,6 +368,7 @@
       effort="45.43"
       velocity="15.70" />
   </joint>
+  
   <link
     name="FL_calflower">
     <collision>
@@ -345,6 +378,7 @@
       </geometry>
     </collision>
   </link>
+  
   <joint
     name="FL_calflower_joint"
     type="fixed">
@@ -367,6 +401,7 @@
       </geometry>
     </collision>
   </link>
+  
   <joint
     name="FL_calflower1_joint"
     type="fixed">
@@ -380,6 +415,7 @@
     <axis
       xyz="0 0 0" />
   </joint>
+  
   <link
     name="FL_foot">
     <inertial>
@@ -417,6 +453,7 @@
       </geometry>
     </collision>
   </link>
+  
   <joint
     name="FL_foot_joint"
     type="fixed" dont_collapse="true">
@@ -430,6 +467,7 @@
     <axis
       xyz="0 0 0" />
   </joint>
+  
   <link
     name="FR_hip">
     <inertial>
@@ -467,6 +505,7 @@
       </geometry>
     </collision>
   </link>
+  
   <joint
     name="FR_hip_joint"
     type="revolute">
@@ -474,7 +513,7 @@
       xyz="0.1934 -0.0465 0"
       rpy="0 0 0" />
     <parent
-      link="base_link" />
+      link="torso" />
     <child
       link="FR_hip" />
     <axis
@@ -485,6 +524,7 @@
       effort="23.7"
       velocity="30.1" />
   </joint>
+  
   <link
     name="FR_thigh">
     <inertial>
@@ -522,6 +562,7 @@
       </geometry>
     </collision>
   </link>
+  
   <joint
     name="FR_thigh_joint"
     type="revolute">
@@ -733,7 +774,7 @@
       xyz="-0.1934 0.0465 0"
       rpy="0 0 0" />
     <parent
-      link="base_link" />
+      link="torso" />
     <child
       link="RL_hip" />
     <axis
@@ -992,7 +1033,7 @@
       xyz="-0.1934 -0.0465 0"
       rpy="0 0 0" />
     <parent
-      link="base_link" />
+      link="torso" />
     <child
       link="RR_hip" />
     <axis
@@ -1231,7 +1272,7 @@
       xyz="-0.02557 0 0.04232"
       rpy="0 0 0" />
     <parent
-      link="base_link" />
+      link="torso" />
     <child
       link="imu" />
     <axis
@@ -1261,7 +1302,7 @@
       xyz="0.28945 0 -0.046825"
       rpy="0 2.8782 0" />
     <parent
-      link="base_link" />
+      link="torso" />
     <child
       link="radar" />
     <axis
@@ -1409,6 +1450,15 @@
     <visualize>true</visualize> 
     <topic>imu</topic>
   </sensor>
-</gazebo>
+</gazebo> -->
+
+
+<!-- <gazebo reference="world" >
+  <joint> name="torso" </joint>
+  <material> Gazebo/Blue </material>
+  <static>true</static>
+</gazebo> -->
+
   
 </robot>
+

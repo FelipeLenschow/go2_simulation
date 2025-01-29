@@ -15,6 +15,8 @@ find_package(rclcpp_lifecycle REQUIRED)
 find_package(go2_interfaces REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(tf2 REQUIRED)                        
+find_package(tf2_geometry_msgs REQUIRED) 
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -39,6 +41,8 @@ target_include_directories(${PROJECT_NAME}
     rclcpp_lifecycle
     go2_interfaces
     std_msgs
+    tf2_geometry_msgs
+    tf2
     sensor_msgs
 )
  
@@ -51,6 +55,8 @@ ament_target_dependencies(${PROJECT_NAME}
   go2_interfaces
   std_msgs
   sensor_msgs
+  tf2_geometry_msgs
+  tf2 
 )
 
   pluginlib_export_plugin_description_file(controller_interface go2_lowstates.xml)

@@ -76,22 +76,43 @@ namespace go2_controller
         pinocchio::Model  model;
         std::shared_ptr<pinocchio::Data> data;
 
-        double q[12];
-        double dq[12];
-        double effort[12];
-        double kp[12];
-        double kd[12];
-        double tau[12];
+        // double q[12];
+        // double dq[12];
+        // double effort[12];
+        // double kp[12];
+        // double kd[12];
+        // double tau[12];
 
-        double commanded_effort[12];
-        double q_e[12];
-        double dq_e[12];
+        // double commanded_effort[12];
+        // double q_e[12];
+        // double dq_e[12];
 
-        double qr[12];
-        double dqr[12];
+        // double qr[12];
+        // double dqr[12];
+
+
+        // Eigen::Matrix<double, 12, 1> q;
+        Eigen::VectorXd gravidade;
+        Eigen::VectorXd q;
+        Eigen::VectorXd dq;
+        Eigen::VectorXd kp;
+        Eigen::VectorXd kd;
+        Eigen::VectorXd ki;
+        Eigen::VectorXd tauG;
+        Eigen::VectorXd tau;
+        Eigen::VectorXd q_e;
+        Eigen::VectorXd qi_e;
+        Eigen::VectorXd dq_e;
+        Eigen::VectorXd qr;
+        Eigen::VectorXd dqr;
+        Eigen::VectorXd effort;
+        Eigen::VectorXd commanded_effort;
+
 
         double Kp_gain;
         double Kd_gain;
+        double Ki_gain;
+
 
         const std::vector<std::string> allowed_state_interface_types_ = {
             hardware_interface::HW_IF_POSITION,
