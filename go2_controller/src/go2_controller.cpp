@@ -6,11 +6,7 @@
 #include "rclcpp/logging.hpp"
 #include "rclcpp/parameter.hpp"
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
-// #include "rclcpp/qos.hpp"
-// #include "rclcpp/qos_event.hpp"
 #include "rclcpp/time.hpp"
-// #include "rclcpp_action/create_server.hpp"
-// #include "rclcpp_action/server_goal_handle.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
@@ -33,16 +29,17 @@ namespace go2_controller
         // pinocchio::Model model;
         pinocchio::urdf::buildModel(urdf_path, model);
                 
-        // std::cout<<model.name<<std::endl;
+        // std::cout<<model.names<<std::endl;    
         // std::cout<<model.nbodies<<std::endl;
         data = std::make_shared<pinocchio::Data>(model);
         // Eigen::VectorXd q(model.nq);
 
         // for(int i=0; i<model.nframes; i++)
         // {
-        //     std::cout<<model.frames[i]<<std::endl;
+        //     std::cout<<model.names[i]<<std::endl;
         //     std::cout<<"---"<<std::endl;
         // }
+
         gravidade.resize(3);
         q.resize(12);
         dq.resize(12);
@@ -307,82 +304,66 @@ namespace go2_controller
         //   2 - Effort
 
         std::lock_guard<std::mutex> lock(this->mutex_controller);
-        this->CompG();
-
-        for (auto index{0}; index < 12; index++)
         {
 
-            q[index] = joint_state_interface_[0][index].get().get_value();
+            for (auto index{0}; index < 12; index++)
+            {
 
-            // get the joint velocity
-            dq[index] = joint_state_interface_[1][index].get().get_value();
+                q[index] = joint_state_interface_[0][index].get().get_value();
 
-            // calcule the position and velocity errors
+                // get the joint velocity
+                dq[index] = joint_state_interface_[1][index].get().get_value();
+            }
 
-            // std::cout << qr[index] << std::endl;
-            q_e[index] = qr[index] - q[index];
-            qi_e[index] = qi_e[index] + q_e[index];
-            dq_e[index] = dqr[index] - dq[index];
+            this->CompG();
 
-            commanded_effort[index] = kp[index] * q_e[index] + kd[index] * dq_e[index] - tauG[index];
-            (void)joint_command_interface_[0][index].get().set_value(commanded_effort[index]);
+            // qr << 0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65;
 
+            for (auto index{0}; index < 12; index++)
+            {
+                // calcule the position and velocity errors
+
+                // std::cout << qr[index] << std::endl;
+                q_e[index] = qr[index] - q[index];
+                qi_e[index] = qi_e[index] + q_e[index];
+                dq_e[index] = dqr[index] - dq[index];
+
+            
+               commanded_effort[index] = kp[index] * q_e[index] + kd[index] * dq_e[index] + tauG[index];
+                //  commanded_effort[index] = -tauG[index];
+                    // std::cout << "tauG" << tauG[index] << std ::endl;
+                (void)joint_command_interface_[0][index].get().set_value(commanded_effort[index]);
+
+            }
+
+            publish_joint_control_signal();
         }
-
-        publish_joint_control_signal();
 
         return controller_interface::return_type::OK;
     }
 
     void Go2Controller::CompG()
     {
-        // // Configuração do robô (vetor de posições das juntas)
-        // Eigen::VectorXd q = Eigen::VectorXd::Zero(model.nq); // Configuração neutra (todas as juntas em 0)
+       
 
-        // // Vetores de velocidade e aceleração (zeros para cálculo apenas da gravidade)
-        // Eigen::VectorXd v = Eigen::VectorXd::Zero(model.nv);
-        // Eigen::VectorXd a = Eigen::VectorXd::Zero(model.nv);
+      //calculando jacobiano do centro de massa função jacobianCenterOfMass
 
-        // // Computar o vetor de gravidade generalizado
-        // pinocchio::computeGeneralizedGravity(model, *data, q);
-
-        // Loop para calcular e exibir o impacto da gravidade em cada junta
-        // std::cout << "Impacto da gravidade em cada junta:" << std::endl;
-        // for (int index = 0; index < model.nq; index++)
-        // {
-        //     std::cout << "Junta " << index << ": " << data->g[index] << std::endl;
-        //     // Exibir o valor da gravidade para a junta específica
-        //     std::cout << "Gravidade generalizada na junta " << index << ": "
-        //               << data->g[index] << std::endl;
-        //     tauG[index] = data->g[index];
-        // }
-        // calculando jacobiano do centro de massa função jacobianCenterOfMass
-
-         // Inicializar o vetor de posições e velocidades
-
-        Eigen::VectorXd q = Eigen::VectorXd::Zero(model.nq); // posições
-        Eigen::VectorXd v = Eigen::VectorXd::Zero(model.nv); // velocidades
-
-         // Calcular o Jacobiano do centro de massa
+    Eigen::VectorXd v = Eigen::VectorXd::Zero(model.nv); // velocidades
         // auto com = pinocchio::centerOfMass(model, *data, q);
-        Eigen::MatrixXd Jcom = jacobianCenterOfMass(model, *data, q);
-       // std::cout<<Jcom<<std::endl;
-        tauG = Jcom.transpose()*gravidade;
+     // Eigen::MatrixXd Jcom = jacobianCenterOfMass(model, *data, q);
+      Eigen::VectorXd a = Eigen::VectorXd::Zero(model.nv); // in rad/s² for the UR5
 
-
+       Eigen::VectorXd tau = pinocchio::rnea(model, *data, q, v, a);
+       //std::cout<<Jcom<<std::endl;
+      //  tauG = Jcom.transpose()*gravidade;
+        tauG = data->tau.transpose();
+      //  tauG = Eigen::VectorXd::Zero(model.nv);
+        // tauG.head(2) = data->tau.transpose().head(2);
 
         // Eigen::MatrixXd Jcom =pinocchio::jacobianCenterOfMass(model, data, q);
 
         // // Exibir o Jacobiano do centro de massa
-        // std::cout << "Jacobiano do Centro de Massa:\n" << J << std::endl;
-
-        // for (int index = 0; index < model.nq; index++)
-        // {
-        //      pinocchio::jacobianCenterOfMass(model, data, q, J);
-        //      // Exibir o Jacobiano do centro de massa
-        //     std::cout << "Jacobiano do Centro de Massa:\n" << J << std::endl;
-        //     tauG[index] = data->g[index];
-        // }
+        //std::cout << "Jacobiano do Centro de Massa:\n" << Jcom_ << std::endl;
 
     }
 }
