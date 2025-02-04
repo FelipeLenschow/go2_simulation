@@ -119,7 +119,7 @@ public:
     MinimalPublisher()
         : Node("low_cmd"), motion_time(0), rate_count(0), toggle_pos(false)
     {
-        publisher_ = this->create_publisher<go2_interfaces::msg::LowCmd>("/go2_controller/LowReferences", 1);
+        publisher_ = this->create_publisher<go2_interfaces::msg::LowCmd>("/go2_actuator/LowReferences", 1);
         _desPos = _startPos; // Começa na posição inicial
         timer_ = this->create_wall_timer(100ms, std::bind(&MinimalPublisher::publish_message, this));
     }

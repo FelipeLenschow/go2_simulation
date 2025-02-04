@@ -55,10 +55,10 @@ def generate_launch_description():
         arguments=['joint_state_broadcaster'],
     )
 
-    go2_controller_spawner = Node(
+    go2_actuator_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["go2_controller", "--controller-manager", "/controller_manager"],
+        arguments=["go2_actuator", "--controller-manager", "/controller_manager"],
     )
 
     go2_low_states_spawner = Node(
@@ -97,12 +97,12 @@ def generate_launch_description():
         RegisterEventHandler(
             event_handler=OnProcessExit(
                 target_action=gz_spawn_entity,
-                on_exit=[go2_controller_spawner],
+                on_exit=[go2_actuator_spawner],
             )
         ),
         RegisterEventHandler(
             event_handler=OnProcessExit(
-                target_action=go2_controller_spawner,
+                target_action=go2_actuator_spawner,
                 on_exit=[go2_low_states_spawner],
             )
         ),
