@@ -15,8 +15,6 @@
 
 #include "ament_index_cpp/get_package_share_directory.hpp"
 
-
-
 namespace go2_actuator
 {
     using lowCmd = go2_interfaces::msg::LowCmd;
@@ -52,15 +50,12 @@ namespace go2_actuator
         controller_interface::CallbackReturn on_deactivate(
             const rclcpp_lifecycle::State &previous_state) override;
 
-
     protected:
-       
-
         std::vector<std::string> joint_names_;
         std::vector<std::string> command_interface_types_;
         std::vector<std::string> state_interface_types_;
 
-        pinocchio::Model  model;
+        pinocchio::Model model;
         std::shared_ptr<pinocchio::Data> data;
 
         Eigen::VectorXd gravidade;
@@ -79,11 +74,9 @@ namespace go2_actuator
         Eigen::VectorXd effort;
         Eigen::VectorXd commanded_effort;
 
-
         double Kp_gain;
         double Kd_gain;
         double Ki_gain;
-
 
         const std::vector<std::string> allowed_state_interface_types_ = {
             hardware_interface::HW_IF_POSITION,
@@ -114,7 +107,7 @@ namespace go2_actuator
         void publish_joint_control_signal()
         {
             auto message = std_msgs::msg::Float64MultiArray();
-            for(long unsigned int i{0}; i < sizeof(tau)/sizeof(double); i++)
+            for (long unsigned int i{0}; i < sizeof(tau) / sizeof(double); i++)
                 message.data.push_back(tau[i]);
 
             joints_control_publisher_->publish(message);

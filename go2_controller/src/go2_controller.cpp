@@ -15,21 +15,21 @@
 namespace go2_controller
 {
 
-    Go2Controller::Go2Controller() 
-    : controller_interface::ControllerInterface(), 
-    joint_names_({}),
-    model()
+    Go2Controller::Go2Controller()
+        : controller_interface::ControllerInterface(),
+          joint_names_({}),
+          model()
     {
-        std::cout<<"Name from URDF"<< std::endl;
-       
+        std::cout << "Name from URDF" << std::endl;
+
         const auto package_share_path = ament_index_cpp::get_package_share_directory("go2_description");
         const auto urdf_path = std::filesystem::path(package_share_path) / "urdf" / "go2.xacro.urdf";
 
         // Create a set of Pinocchio models and data.
         // pinocchio::Model model;
         pinocchio::urdf::buildModel(urdf_path, model);
-                
-        // std::cout<<model.names<<std::endl;    
+
+        // std::cout<<model.names<<std::endl;
         // std::cout<<model.nbodies<<std::endl;
         data = std::make_shared<pinocchio::Data>(model);
         // Eigen::VectorXd q(model.nq);
@@ -45,19 +45,15 @@ namespace go2_controller
         dq.resize(12);
         kp.resize(12);
         kd.resize(12);
-        ki.resize(12);
         tau.resize(12);
         tauG.resize(12);
-        q_e.resize(12);  
-        qi_e.resize(12); 
-        dq_e.resize(12);   
-        qr.resize(12);   
-        dqr.resize(12); 
-        effort.resize(12);   
-        commanded_effort.resize(12); 
-                     
-
-}
+        q_e.resize(12);
+        dq_e.resize(12);
+        qr.resize(12);
+        dqr.resize(12);
+        effort.resize(12);
+        commanded_effort.resize(12);
+    }
 
     controller_interface::CallbackReturn Go2Controller::on_init()
     {
@@ -74,8 +70,8 @@ namespace go2_controller
 
             auto_declare<double>("robot_states_feedabck_rate", 100.0);
 
-             gravidade[0] = gravidade[1] = 0;
-             gravidade[2] = -9.80665;
+            gravidade[0] = gravidade[1] = 0;
+            gravidade[2] = -9.80665;
         }
         catch (const std::exception &e)
         {
@@ -209,7 +205,7 @@ namespace go2_controller
         }
 
         joints_reference_subscriber_ = get_node()->create_subscription<lowCmd>(
-            "~/LowReferences", rclcpp::SystemDefaultsQoS(), 
+            "~/LowReferences", rclcpp::SystemDefaultsQoS(),
             [this](const std::shared_ptr<lowCmd> msg) -> void
             {
                 std::lock_guard<std::mutex> lock(this->mutex_controller);
@@ -325,15 +321,12 @@ namespace go2_controller
 
                 // std::cout << qr[index] << std::endl;
                 q_e[index] = qr[index] - q[index];
-                qi_e[index] = qi_e[index] + q_e[index];
                 dq_e[index] = dqr[index] - dq[index];
 
-            
-               commanded_effort[index] = kp[index] * q_e[index] + kd[index] * dq_e[index] + tauG[index];
+                commanded_effort[index] = kp[index] * q_e[index] + kd[index] * dq_e[index] + tauG[index];
                 //  commanded_effort[index] = -tauG[index];
-                    // std::cout << "tauG" << tauG[index] << std ::endl;
+                // std::cout << "tauG" << tauG[index] << std ::endl;
                 (void)joint_command_interface_[0][index].get().set_value(commanded_effort[index]);
-
             }
 
             publish_joint_control_signal();
@@ -344,27 +337,25 @@ namespace go2_controller
 
     void Go2Controller::CompG()
     {
-       
 
-      //calculando jacobiano do centro de massa função jacobianCenterOfMass
+        // calculando jacobiano do centro de massa função jacobianCenterOfMass
 
-    Eigen::VectorXd v = Eigen::VectorXd::Zero(model.nv); // velocidades
-        // auto com = pinocchio::centerOfMass(model, *data, q);
-     // Eigen::MatrixXd Jcom = jacobianCenterOfMass(model, *data, q);
-      Eigen::VectorXd a = Eigen::VectorXd::Zero(model.nv); // in rad/s² for the UR5
+        Eigen::VectorXd v = Eigen::VectorXd::Zero(model.nv); // velocidades
+                                                             // auto com = pinocchio::centerOfMass(model, *data, q);
+                                                             // Eigen::MatrixXd Jcom = jacobianCenterOfMass(model, *data, q);
+        Eigen::VectorXd a = Eigen::VectorXd::Zero(model.nv); // in rad/s² for the UR5
 
-       Eigen::VectorXd tau = pinocchio::rnea(model, *data, q, v, a);
-       //std::cout<<Jcom<<std::endl;
-      //  tauG = Jcom.transpose()*gravidade;
+        Eigen::VectorXd tau = pinocchio::rnea(model, *data, q, v, a);
+        // std::cout<<Jcom<<std::endl;
+        //  tauG = Jcom.transpose()*gravidade;
         tauG = data->tau.transpose();
-      //  tauG = Eigen::VectorXd::Zero(model.nv);
+        //  tauG = Eigen::VectorXd::Zero(model.nv);
         // tauG.head(2) = data->tau.transpose().head(2);
 
         // Eigen::MatrixXd Jcom =pinocchio::jacobianCenterOfMass(model, data, q);
 
         // // Exibir o Jacobiano do centro de massa
-        //std::cout << "Jacobiano do Centro de Massa:\n" << Jcom_ << std::endl;
-
+        // std::cout << "Jacobiano do Centro de Massa:\n" << Jcom_ << std::endl;
     }
 }
 #include <pluginlib/class_list_macros.hpp>

@@ -6,6 +6,12 @@
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 #include "go2_interfaces/msg/low_cmd.hpp"
 
+#include <rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp>
+#include <std_msgs/msg/float64_multi_array.hpp>
+#include <vector>
+#include <string>
+#include <mutex>
+
 #include "std_msgs/msg/float64_multi_array.hpp"
 
 #include <filesystem>
@@ -14,8 +20,6 @@
 #include "pinocchio/parsers/urdf.hpp"
 
 #include "ament_index_cpp/get_package_share_directory.hpp"
-
-
 
 namespace go2_controller
 {
@@ -52,67 +56,33 @@ namespace go2_controller
         controller_interface::CallbackReturn on_deactivate(
             const rclcpp_lifecycle::State &previous_state) override;
 
-        // // GO2_CONTROLLER_PUBLIC
-        // controller_interface::CallbackReturn on_cleanup(
-        //     const rclcpp_lifecycle::State &previous_state) override;
-
-        // // GO2_CONTROLLER_PUBLIC
-        // controller_interface::CallbackReturn on_error(
-        //     const rclcpp_lifecycle::State &previous_state) override;
-
-        // // GO2_CONTROLLER_PUBLIC
-        // controller_interface::CallbackReturn on_shutdown(
-        //     const rclcpp_lifecycle::State &previous_state) override;
-
         void CompG();
 
     protected:
-       
-
         std::vector<std::string> joint_names_;
         std::vector<std::string> command_interface_types_;
         std::vector<std::string> state_interface_types_;
 
-        pinocchio::Model  model;
+        pinocchio::Model model;
         std::shared_ptr<pinocchio::Data> data;
 
-        // double q[12];
-        // double dq[12];
-        // double effort[12];
-        // double kp[12];
-        // double kd[12];
-        // double tau[12];
-
-        // double commanded_effort[12];
-        // double q_e[12];
-        // double dq_e[12];
-
-        // double qr[12];
-        // double dqr[12];
-
-
-        // Eigen::Matrix<double, 12, 1> q;
         Eigen::VectorXd gravidade;
         Eigen::VectorXd q;
         Eigen::VectorXd dq;
         Eigen::VectorXd kp;
         Eigen::VectorXd kd;
-        Eigen::VectorXd ki;
         Eigen::VectorXd tauG;
         Eigen::VectorXd tau;
         Eigen::VectorXd q_e;
-        Eigen::VectorXd qi_e;
         Eigen::VectorXd dq_e;
         Eigen::VectorXd qr;
         Eigen::VectorXd dqr;
         Eigen::VectorXd effort;
         Eigen::VectorXd commanded_effort;
 
-
         double Kp_gain;
         double Kd_gain;
         double Ki_gain;
-
 
         const std::vector<std::string> allowed_state_interface_types_ = {
             hardware_interface::HW_IF_POSITION,
@@ -143,7 +113,7 @@ namespace go2_controller
         void publish_joint_control_signal()
         {
             auto message = std_msgs::msg::Float64MultiArray();
-            for(long unsigned int i{0}; i < sizeof(commanded_effort)/sizeof(double); i++)
+            for (long unsigned int i{0}; i < sizeof(commanded_effort) / sizeof(double); i++)
                 message.data.push_back(commanded_effort[i]);
 
             joints_control_publisher_->publish(message);

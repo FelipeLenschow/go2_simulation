@@ -49,11 +49,11 @@ def generate_launch_description():
                    '-z', '0.45'],
     )
 
-    joint_state_broadcaster_spawner = Node(
-        package='controller_manager',
-        executable='spawner',
-        arguments=['joint_state_broadcaster'],
-    )
+    # joint_state_broadcaster_spawner = Node(
+    #     package='controller_manager',
+    #     executable='spawner',
+    #     arguments=['joint_state_broadcaster'],
+    # )
 
     go2_actuator_spawner = Node(
         package="controller_manager",
@@ -67,7 +67,12 @@ def generate_launch_description():
         arguments=["go2_lowstates", "--controller-manager", "/controller_manager"],
     )
 
-    
+    go2_joint_controller = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["go2_jointcontroller", "--controller-manager", "/controller_manager"],
+    )
+
     bridge = Node(
         package="ros_gz_bridge",
         executable="parameter_bridge",
@@ -104,6 +109,12 @@ def generate_launch_description():
             event_handler=OnProcessExit(
                 target_action=go2_actuator_spawner,
                 on_exit=[go2_low_states_spawner],
+            )
+        ),
+        RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=go2_low_states_spawner,
+                on_exit=[go2_joint_controller],
             )
         ),
         node_robot_state_publisher,

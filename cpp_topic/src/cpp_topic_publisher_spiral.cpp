@@ -1,3 +1,143 @@
+#include <chrono>
+#include <memory>
+#include "rclcpp/rclcpp.hpp"
+#include "go2_interfaces/msg/low_cmd.hpp"
+
+using namespace std::chrono_literals;
+
+class MinimalPublisher : public rclcpp::Node
+{
+
+public:
+    MinimalPublisher()
+        : Node("low_cmd"), motion_time(0), rate_count(0), toggle_pos(false)
+    {
+        publisher_ = this->create_publisher<go2_interfaces::msg::LowCmd>("/go2_jointcontroller/JointControllerReferences", 1);
+        _desPos = _startPos; // Começa na posição inicial
+        timer_ = this->create_wall_timer(100ms, std::bind(&MinimalPublisher::publish_message, this));
+    }
+
+private:
+    void publish_message()
+    {
+        auto low_cmd = go2_interfaces::msg::LowCmd();
+        motion_time++;
+
+        // Normalização do tempo para interpolação (0 a 1)
+        double rate = std::min(1.0, rate_count / 50.0);
+        rate_count++;
+
+        // Interpola entre as posições
+        for (int j = 0; j < 12; j++)
+        {
+            // low_cmd.motor_cmd[j].q = jointLinearInterpolation(_startPos[j], _desPos[j], rate);
+            low_cmd.motor_cmd[j].q = _desPos[j];
+            low_cmd.motor_cmd[j].dq = 0;
+            low_cmd.motor_cmd[j].kp = 60.0;
+            low_cmd.motor_cmd[j].kd = 5.0;
+            low_cmd.motor_cmd[j].tau = 0;
+        }
+
+        for (int i = 0; i < 12; i++)
+        {
+            low_cmd.motor_cmd[i].q = jointLinearInterpolation(_startPos[i], _desPos[i], rate);
+        }
+
+        low_cmd.reserve = 2;
+
+        publisher_->publish(low_cmd);
+
+        // Alternância entre posições a cada 50 iterações
+        if (rate >= 1.0)
+        {
+            toggle_pos = !toggle_pos;
+            _desPos = toggle_pos ? _targetPos_1 : _startPos;
+            rate_count = 0; // Reinicia interpolação
+        }
+    }
+
+    double jointLinearInterpolation(double q0, double qf, double rate)
+    {
+        return q0 + rate * (qf - q0);
+    }
+
+    rclcpp::TimerBase::SharedPtr timer_;
+    rclcpp::Publisher<go2_interfaces::msg::LowCmd>::SharedPtr publisher_;
+    bool toggle_pos = false;
+    int motion_time, rate_count;
+    float *_desPos;
+
+    float _startPos[12] = {0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
+    float _targetPos_1[12] = {0.0, 1.0, -1.05, 0.5, 0.8, -1.05, -0.2, 0.5, -1.05, 0.2, 0.5, -1.5};
+};
+
+int main(int argc, char *argv[])
+{
+    rclcpp::init(argc, argv);
+    rclcpp::spin(std::make_shared<MinimalPublisher>());
+    rclcpp::shutdown();
+    return 0;
+}
+//---------------------------------------------------------------------------------------------------
+// class MinimalPublisher : public rclcpp::Node
+// {
+// public:
+//     MinimalPublisher()
+//         : Node("low_cmd")
+//     {
+//         publisher_ = this->create_publisher<go2_interfaces::msg::LowCmd>("/go2_controller/LowReferences", 1);
+//         toggle_pos = false;
+//         _desPos = _startPos;                                                                          // Começa na posição inicial
+//         timer_ = this->create_wall_timer(100ms, std::bind(&MinimalPublisher::publish_message, this)); // Publica a cada 100ms
+//     }
+
+// private:
+//     void publish_message()
+//     {
+//         auto low_cmd = go2_interfaces::msg::LowCmd(); ///// botar????
+
+//         // Publica continuamente a posição alvo
+//         for (int j = 0; j < 12; j++)
+//         {
+//             low_cmd.motor_cmd[j].q = _desPos[j]; // Mantém publicando a posição desejada
+//             low_cmd.motor_cmd[j].dq = 0;
+//             low_cmd.motor_cmd[j].kp = 60.0;
+//             low_cmd.motor_cmd[j].kd = 5.0;
+//             low_cmd.motor_cmd[j].tau = 0;
+//         }
+
+//         publisher_->publish(low_cmd); // Publica a posição continuamente
+
+//         // Simulação de condição para troca de alvo (substituir por uma checagem real)
+//         static int count = 0;
+//         count++;
+//         if (count >= 50) // Simula mudança após algumas iterações
+//         {
+//             toggle_pos = !toggle_pos;
+//             _desPos = toggle_pos ? _targetPos_1 : _startPos;
+//             count = 0; // Reseta a contagem
+//         }
+//     }
+
+//     rclcpp::TimerBase::SharedPtr timer_;
+//     rclcpp::Publisher<go2_interfaces::msg::LowCmd>::SharedPtr publisher_;
+//     bool toggle_pos;
+//     float *_desPos;
+
+//     float _startPos[12] = {0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
+//     float _targetPos_1[12] = {0.0, 1.0, -1.05, 0.5, 0.8, -1.05, -0.2, 0.5, -1.05, 0.2, 0.5, -1.5};
+// };
+
+// int main(int argc, char *argv[])
+// {
+//     rclcpp::init(argc, argv);
+//     rclcpp::spin(std::make_shared<MinimalPublisher>());
+//     rclcpp::shutdown();
+//     return 0;
+// }
+
+//--------------------------------------------------------------------------------------------------
+
 // #include <chrono>
 // #include <memory>
 // #include "rclcpp/rclcpp.hpp"
@@ -104,150 +244,3 @@
 //     rclcpp::shutdown();
 //     return 0;
 // }
-
-
-#include <chrono>
-#include <memory>
-#include "rclcpp/rclcpp.hpp"
-#include "go2_interfaces/msg/low_cmd.hpp"
-
-using namespace std::chrono_literals;
-
-class MinimalPublisher : public rclcpp::Node
-{
-public:
-    MinimalPublisher()
-        : Node("low_cmd"), motion_time(0), rate_count(0), toggle_pos(false)
-    {
-        publisher_ = this->create_publisher<go2_interfaces::msg::LowCmd>("/go2_actuator/LowReferences", 1);
-        _desPos = _startPos; // Começa na posição inicial
-        timer_ = this->create_wall_timer(100ms, std::bind(&MinimalPublisher::publish_message, this));
-    }
-
-private:
-    void publish_message()
-    {
-        auto low_cmd = go2_interfaces::msg::LowCmd();
-        motion_time++;
-
-        // Normalização do tempo para interpolação (0 a 1)
-        double rate = std::min(1.0, rate_count / 50.0);
-        rate_count++;
-
-        // if (motion_time >= 0 && motion_time < 20)
-        // {
-        //     for (int i = 0; i < 12; i++)
-        //     {
-        //         _startPos[i] = low_cmd.motor_cmd[i].q;
-        //     }
-        // }
-
-        // Interpola entre as posições
-        for (int j = 0; j < 12; j++)
-        {
-            //low_cmd.motor_cmd[j].q = jointLinearInterpolation(_startPos[j], _desPos[j], rate);
-            low_cmd.motor_cmd[j].q = _desPos[j];
-            low_cmd.motor_cmd[j].dq = 0;
-            low_cmd.motor_cmd[j].kp = 60.0;
-            low_cmd.motor_cmd[j].kd = 5.0;
-            low_cmd.motor_cmd[j].tau = 0;
-        }
-
-         for (int i = 0; i < 12; i++)
-            {
-                low_cmd.motor_cmd[i].q = jointLinearInterpolation(_startPos[i], _desPos[i], rate);
-            }
-
-        publisher_->publish(low_cmd);
-
-        // Alternância entre posições a cada 50 iterações
-        if (rate >= 1.0)
-        {
-            toggle_pos = !toggle_pos;
-             _desPos = toggle_pos ? _targetPos_1 : _startPos;
-            rate_count = 0; // Reinicia interpolação
-        }
-    }
-
-    double jointLinearInterpolation(double q0, double qf, double rate)
-    {
-        return q0 + rate * (qf - q0);
-    }
-
-    rclcpp::TimerBase::SharedPtr timer_;
-    rclcpp::Publisher<go2_interfaces::msg::LowCmd>::SharedPtr publisher_;
-    bool toggle_pos=false;
-    int motion_time, rate_count;
-    float *_desPos;
-
-    float _startPos[12] = {0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
-    float _targetPos_1[12] = {0.0, 1.0, -1.05, 0.5, 0.8, -1.05, -0.2, 0.5, -1.05, 0.2, 0.5, -1.5};
-};
-
-int main(int argc, char *argv[])
-{
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<MinimalPublisher>());
-    rclcpp::shutdown();
-    return 0;
-}
-
-
-
-// class MinimalPublisher : public rclcpp::Node
-// {
-// public:
-//     MinimalPublisher()
-//         : Node("low_cmd")
-//     {
-//         publisher_ = this->create_publisher<go2_interfaces::msg::LowCmd>("/go2_controller/LowReferences", 1);
-//         toggle_pos = false;
-//         _desPos = _startPos;                                                                          // Começa na posição inicial
-//         timer_ = this->create_wall_timer(100ms, std::bind(&MinimalPublisher::publish_message, this)); // Publica a cada 100ms
-//     }
-
-// private:
-//     void publish_message()
-//     {
-//         auto low_cmd = go2_interfaces::msg::LowCmd(); ///// botar????
-
-//         // Publica continuamente a posição alvo
-//         for (int j = 0; j < 12; j++)
-//         {
-//             low_cmd.motor_cmd[j].q = _desPos[j]; // Mantém publicando a posição desejada
-//             low_cmd.motor_cmd[j].dq = 0;
-//             low_cmd.motor_cmd[j].kp = 60.0;
-//             low_cmd.motor_cmd[j].kd = 5.0;
-//             low_cmd.motor_cmd[j].tau = 0;
-//         }
-
-//         publisher_->publish(low_cmd); // Publica a posição continuamente
-
-//         // Simulação de condição para troca de alvo (substituir por uma checagem real)
-//         static int count = 0;
-//         count++;
-//         if (count >= 50) // Simula mudança após algumas iterações
-//         {
-//             toggle_pos = !toggle_pos;
-//             _desPos = toggle_pos ? _targetPos_1 : _startPos;
-//             count = 0; // Reseta a contagem
-//         }
-//     }
-
-//     rclcpp::TimerBase::SharedPtr timer_;
-//     rclcpp::Publisher<go2_interfaces::msg::LowCmd>::SharedPtr publisher_;
-//     bool toggle_pos;
-//     float *_desPos;
-
-//     float _startPos[12] = {0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
-//     float _targetPos_1[12] = {0.0, 1.0, -1.05, 0.5, 0.8, -1.05, -0.2, 0.5, -1.05, 0.2, 0.5, -1.5};
-// };
-
-// int main(int argc, char *argv[])
-// {
-//     rclcpp::init(argc, argv);
-//     rclcpp::spin(std::make_shared<MinimalPublisher>());
-//     rclcpp::shutdown();
-//     return 0;
-// }
-
