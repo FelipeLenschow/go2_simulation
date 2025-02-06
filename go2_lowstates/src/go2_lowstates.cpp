@@ -33,8 +33,6 @@ namespace go2_lowstates
             auto_declare<std::vector<std::string>>("joints", joint_names_);
 
             auto_declare<std::vector<std::string>>("state_interfaces", state_interface_types_);
-
-            auto_declare<double>("robot_states_feedabck_rate", 100.0);
         }
         catch (const std::exception &e)
         {
@@ -142,16 +140,16 @@ namespace go2_lowstates
                 lowStates_msg.imu_state.rpy[2] = yaw;
             });
 
-        effort_subscriber_ = get_node()->create_subscription<effortstates>(
-            "/go2_controller/LowCommands", rclcpp::SystemDefaultsQoS(),
-            [this](const std::shared_ptr<effortstates> msg) -> void
-            {
-                std::lock_guard<std::mutex> lock(this->mutex_controller);
-                for (auto index{0}; index < 12; index++)
-                {
-                    tau[index] = msg->data[index];
-                }
-            });
+        // effort_subscriber_ = get_node()->create_subscription<effortstates>(
+        //     "/go2_controller/LowCommands", rclcpp::SystemDefaultsQoS(),
+        //     [this](const std::shared_ptr<effortstates> msg) -> void
+        //     {
+        //         std::lock_guard<std::mutex> lock(this->mutex_controller);
+        //         for (auto index{0}; index < 12; index++)
+        //         {
+        //             tau[index] = msg->data[index];
+        //         }
+        //     });
 
         go2_lowstates_publisher = get_node()->create_publisher<lowStates>("go2_lowstates/LowStates", 10);
         return CallbackReturn::SUCCESS;

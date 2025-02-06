@@ -1312,6 +1312,7 @@
 <ros2_control name="GazeboSimSystem" type="system">
   <hardware>
     <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+     <param name="update_rate">1000</param> 
   </hardware>
 
     <joint name="FL_hip_joint">
@@ -1440,6 +1441,7 @@
   <gazebo>
     <plugin filename="libgz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
       <parameters>$(find go2_description)/config/go2.yaml</parameters>
+      <update_rate>1000</update_rate>  <!-- Runs simulation at 1000Hz -->
     </plugin>
   </gazebo>
 

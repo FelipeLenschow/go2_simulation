@@ -2,8 +2,8 @@ controller_manager:
   ros__parameters:
     update_rate: 1000  # Hz
 
-    joint_state_broadcaster:
-      type: joint_state_broadcaster/JointStateBroadcaster
+    # joint_state_broadcaster:
+    #   type: joint_state_broadcaster/JointStateBroadcaster
     
     # go2_controller:
     #   type: go2_controller/Go2Controller
@@ -48,7 +48,6 @@ controller_manager:
     
 #     joints_references: [ 0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65]
     
-#     robot_states_feedabck_rate: 100.0 #Hz
 
 go2_actuator:
   ros__parameters:
@@ -80,8 +79,6 @@ go2_actuator:
           
     joints_references: [ 0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65]
     
-    robot_states_feedabck_rate: 1000.0 #Hz
-
 
 go2_lowstates:
   ros__parameters:

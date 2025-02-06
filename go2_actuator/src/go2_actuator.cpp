@@ -15,22 +15,20 @@
 namespace go2_actuator
 {
 
-    Go2Actuator::Go2Actuator() 
-    : controller_interface::ControllerInterface(), 
-    joint_names_({}),
-    model()
+    Go2Actuator::Go2Actuator()
+        : controller_interface::ControllerInterface(),
+          joint_names_({})
     {
         q.resize(12);
         dq.resize(12);
         kp.resize(12);
         kd.resize(12);
         tau.resize(12);
-        q_e.resize(12);  
-        dq_e.resize(12);   
-        qr.resize(12);   
-        dqr.resize(12); 
-                     
-}
+        q_e.resize(12);
+        dq_e.resize(12);
+        qr.resize(12);
+        dqr.resize(12);
+    }
 
     controller_interface::CallbackReturn Go2Actuator::on_init()
     {
@@ -40,12 +38,9 @@ namespace go2_actuator
             auto_declare<std::vector<std::string>>("command_interfaces", command_interface_types_);
             auto_declare<std::vector<std::string>>("state_interfaces", state_interface_types_);
 
-            auto_declare<double>("gain.Kp", 100.0);
-            auto_declare<double>("gain.Kd", 10.0);
+            auto_declare<double>("gain.Kp", 60.0);
+            auto_declare<double>("gain.Kd", 5.0);
             auto_declare<std::vector<double>>("joints_references", {});
-
-            auto_declare<double>("robot_states_feedabck_rate", 100.0);
-
         }
         catch (const std::exception &e)
         {
@@ -175,7 +170,7 @@ namespace go2_actuator
         }
 
         joints_reference_subscriber_ = get_node()->create_subscription<lowCmd>(
-            "~/LowReferences", rclcpp::SystemDefaultsQoS(), 
+            "~/LowCommands", rclcpp::SystemDefaultsQoS(),
             [this](const std::shared_ptr<lowCmd> msg) -> void
             {
                 std::lock_guard<std::mutex> lock(this->mutex_actuator);
@@ -189,7 +184,7 @@ namespace go2_actuator
                 }
             });
 
-        joints_control_publisher_ = get_node()->create_publisher<std_msgs::msg::Float64MultiArray>("~/LowCommands", 10);
+        // joints_control_publisher_ = get_node()->create_publisher<std_msgs::msg::Float64MultiArray>("~/LowCommands", 10);
 
         RCLCPP_INFO(logger, "Impedance actuator gains update");
 
@@ -265,38 +260,35 @@ namespace go2_actuator
         std::lock_guard<std::mutex> lock(this->mutex_actuator);
         {
 
-            if (tau[0]!=0){
+            if (tau[0] != 0)
+            {
                 for (auto index{0}; index < 12; index++)
                 {
                     (void)joint_command_interface_[0][index].get().set_value(tau[index]);
                 }
             }
-            else if (kp[0]!=0)
+            else if (kp[0] != 0)
             {
-                
-             for (auto index{0}; index < 12; index++)
+                for (auto index{0}; index < 12; index++)
                 {
-                // get the joint position
-                q[index] = joint_state_interface_[0][index].get().get_value();
-                // get the joint velocity
-                dq[index] = joint_state_interface_[1][index].get().get_value();
+                    // get the joint position
+                    q[index] = joint_state_interface_[0][index].get().get_value();
+                    // get the joint velocity
+                    dq[index] = joint_state_interface_[1][index].get().get_value();
 
-                //compute the error position
-                q_e[index] = qr[index] - q[index];
-                dq_e[index] = dqr[index] - dq[index];
-                
-                double tau_ = kp[index] * q_e[index] + kd[index] * dq_e[index];
-                
-                (void)joint_command_interface_[0][index].get().set_value(tau_);
+                    // compute the error position
+                    q_e[index] = qr[index] - q[index];
+                    dq_e[index] = dqr[index] - dq[index];
 
+                    double tau_ = kp[index] * q_e[index] + kd[index] * dq_e[index];
+
+                    (void)joint_command_interface_[0][index].get().set_value(tau_);
                 }
             }
             else
             {
-                std::cout<< "ERROR: Kp, Kd and Tau is zero"<<std::endl;
+                std::cout << "ERROR: Kp, Kd and Tau are zero" << std::endl;
             }
-
-            publish_joint_control_signal();
         }
         return controller_interface::return_type::OK;
     }

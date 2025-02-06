@@ -29,10 +29,10 @@ namespace go2_jointcontroller
         pinocchio::urdf::buildModel(urdf_path, model);
 
         data = std::make_shared<pinocchio::Data>(model);
-
+        control_mode = 2;
         std::cout << model.name << std::endl;
 
-        for (int i = 0; i < model.nframes; i++)
+        for (int i = 0; i < 13; i++)
         {
             std::cout << model.names[i] << std::endl;
             std::cout << "---" << std::endl;
@@ -44,8 +44,8 @@ namespace go2_jointcontroller
         try
         {
             auto_declare<std::vector<std::string>>("joints", joint_names_);
-            auto_declare<double>("gain.Kp", 100.0);
-            auto_declare<double>("gain.Kd", 10.0);
+            auto_declare<double>("gain.Kp", 60.0);
+            auto_declare<double>("gain.Kd", 5.0);
         }
         catch (const std::exception &e)
         {
@@ -105,7 +105,7 @@ namespace go2_jointcontroller
             kd[i] = kd_gain_;
             tau[i] = 0.0;
         }
-
+        // TODO: use the name of topic from the YAML file
         lowstate_subscriber_ = get_node()->create_subscription<lowStates>(
             "go2_lowstates/LowStates", rclcpp::SystemDefaultsQoS(),
             [this](const std::shared_ptr<lowStates> msg) -> void
@@ -117,18 +117,17 @@ namespace go2_jointcontroller
                     q[index] = msg->motor_state[index].q;
 
                     dq[index] = msg->motor_state[index].dq;
-
-                    tau[index] = msg->motor_state[index].tau_est;
                 }
             });
 
         controller_reference_subscriber_ = get_node()->create_subscription<lowCmd>(
-            "~/JointControllerReferences", rclcpp::SystemDefaultsQoS(),
+            "go2_jointcontroller/JointControllerReferences", rclcpp::SystemDefaultsQoS(),
             [this](const std::shared_ptr<lowCmd> msg) -> void
 
             {
                 std::lock_guard<std::mutex> lock(this->mutex_controller);
                 control_mode = msg->reserve;
+
                 for (int index = 0; index < 12; index++)
                 {
                     qr[index] = msg->motor_cmd[index].q;
@@ -139,7 +138,7 @@ namespace go2_jointcontroller
                 }
             });
 
-        joints_cmd_publisher_ = get_node()->create_publisher<lowCmd>("~/LowCommands", 10);
+        joints_cmd_publisher_ = get_node()->create_publisher<lowCmd>("go2_actuator/LowCommands", 10);
 
         lowCmd_msg.head[0] = 0xFE;
         lowCmd_msg.head[1] = 0xEF;
@@ -199,6 +198,7 @@ namespace go2_jointcontroller
                     break;
 
                 case 2: // PD + Gravity Compensation
+
                     computePD();
                     computeG();
                     for (int j = 0; j < 12; j++)
@@ -224,6 +224,7 @@ namespace go2_jointcontroller
             }
             catch (const std::exception &e)
             {
+
                 RCLCPP_ERROR(get_node()->get_logger(), "Exception in update(): %s", e.what());
                 return controller_interface::return_type::ERROR;
             }
@@ -232,9 +233,6 @@ namespace go2_jointcontroller
 
     void Go2JointController::computeG()
     {
-
-        Eigen::VectorXd v = Eigen::VectorXd::Zero(model.nv);
-        Eigen::VectorXd a = Eigen::VectorXd::Zero(model.nv);
         Eigen::VectorXd tau = pinocchio::rnea(model, *data, q, v, a);
         tauG = data->tau.transpose();
     }
@@ -245,7 +243,7 @@ namespace go2_jointcontroller
         {
             q_e[index] = qr[index] - q[index];
             dq_e[index] = dqr[index] - dq[index];
-            commanded_effort[index] = kp[index] * q_e[index] + kd[index] * dq_e[index];
+            commanded_effort[index] = kp[index] * q_e[index] + 1.25 * dq_e[index];
         }
     }
 

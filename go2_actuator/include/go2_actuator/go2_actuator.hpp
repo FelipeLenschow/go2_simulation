@@ -8,6 +8,7 @@
 
 #include "std_msgs/msg/float64_multi_array.hpp"
 
+// TODO: remove pinocchio pededencies an replace for Eigen
 #include <filesystem>
 #include <pinocchio/algorithm/model.hpp>
 #include <pinocchio/algorithm/rnea.hpp>
@@ -101,17 +102,6 @@ namespace go2_actuator
 
         float x = 0;
         float _startPos[12] = {0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
-
-        // float _targetPos_1[12] = {0.0, 0, 0, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
-
-        void publish_joint_control_signal()
-        {
-            auto message = std_msgs::msg::Float64MultiArray();
-            for (long unsigned int i{0}; i < sizeof(tau) / sizeof(double); i++)
-                message.data.push_back(tau[i]);
-
-            joints_control_publisher_->publish(message);
-        }
     };
 
 }

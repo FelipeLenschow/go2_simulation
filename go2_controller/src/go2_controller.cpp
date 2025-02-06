@@ -25,20 +25,9 @@ namespace go2_controller
         const auto package_share_path = ament_index_cpp::get_package_share_directory("go2_description");
         const auto urdf_path = std::filesystem::path(package_share_path) / "urdf" / "go2.xacro.urdf";
 
-        // Create a set of Pinocchio models and data.
-        // pinocchio::Model model;
         pinocchio::urdf::buildModel(urdf_path, model);
 
-        // std::cout<<model.names<<std::endl;
-        // std::cout<<model.nbodies<<std::endl;
         data = std::make_shared<pinocchio::Data>(model);
-        // Eigen::VectorXd q(model.nq);
-
-        // for(int i=0; i<model.nframes; i++)
-        // {
-        //     std::cout<<model.names[i]<<std::endl;
-        //     std::cout<<"---"<<std::endl;
-        // }
 
         gravidade.resize(3);
         q.resize(12);

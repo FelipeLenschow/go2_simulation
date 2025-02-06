@@ -85,9 +85,13 @@ namespace go2_jointcontroller
         Eigen::VectorXd effort;
         Eigen::VectorXd commanded_effort;
 
+        Eigen::VectorXd v = Eigen::VectorXd::Zero(12);
+        Eigen::VectorXd a = Eigen::VectorXd::Zero(12);
+
         lowCmd lowCmd_msg;
 
         rclcpp::Publisher<lowCmd>::SharedPtr joints_cmd_publisher_;
+
         rclcpp::Subscription<lowCmd>::SharedPtr controller_reference_subscriber_;
         rclcpp::Subscription<lowStates>::SharedPtr lowstate_subscriber_;
 

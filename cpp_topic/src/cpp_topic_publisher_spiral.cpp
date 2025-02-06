@@ -13,6 +13,7 @@ public:
         : Node("low_cmd"), motion_time(0), rate_count(0), toggle_pos(false)
     {
         publisher_ = this->create_publisher<go2_interfaces::msg::LowCmd>("/go2_jointcontroller/JointControllerReferences", 1);
+        // publisher_ = this->create_publisher<go2_interfaces::msg::LowCmd>("/go2_actuator/LowCommands", 1);
         _desPos = _startPos; // Começa na posição inicial
         timer_ = this->create_wall_timer(100ms, std::bind(&MinimalPublisher::publish_message, this));
     }
@@ -43,7 +44,7 @@ private:
             low_cmd.motor_cmd[i].q = jointLinearInterpolation(_startPos[i], _desPos[i], rate);
         }
 
-        low_cmd.reserve = 2;
+        low_cmd.reserve = mode;
 
         publisher_->publish(low_cmd);
 
@@ -53,6 +54,15 @@ private:
             toggle_pos = !toggle_pos;
             _desPos = toggle_pos ? _targetPos_1 : _startPos;
             rate_count = 0; // Reinicia interpolação
+            cout2_ += 1;
+            if (cout2_ == 4)
+            {
+                if (mode == 1)
+                    mode = 2;
+                else
+                    mode = 1;
+                cout2_ = 0;
+            }
         }
     }
 
@@ -66,6 +76,9 @@ private:
     bool toggle_pos = false;
     int motion_time, rate_count;
     float *_desPos;
+
+    int cout2_ = 0;
+    uint32_t mode = 1;
 
     float _startPos[12] = {0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
     float _targetPos_1[12] = {0.0, 1.0, -1.05, 0.5, 0.8, -1.05, -0.2, 0.5, -1.05, 0.2, 0.5, -1.5};
