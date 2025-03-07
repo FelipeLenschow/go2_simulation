@@ -1,0 +1,111 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <xacro:macro name="torso" params="simulation fixed_base">
+
+    <!-- World frame -->
+    <link name="world"/> 
+
+    <!-- <xacro:if value="${simulation}">
+      <xacro:if value="${fixed_base}">
+        <joint name="world_to_base" type="fixed">
+          <parent link="world"/>
+          <child link="base_link"/>
+          <origin xyz="0 0 1"/>
+        </joint>
+      </xacro:if>
+    </xacro:if> -->
+
+    <!-- Movable base in simulation OR real robot -->
+    <!-- <xacro:unless value="${fixed_base}"> -->
+      <link name="odom"/>
+      
+      <joint name="world_to_odom" type="fixed">
+        <parent link="world"/>
+        <child link="odom"/>
+      </joint>
+
+      <joint name="odom_to_base" type="fixed">
+        <parent link="odom"/>
+        <child link="base_link"/>
+      </joint>
+    <!-- </xacro:unless> -->
+
+    <!-- Base link -->
+    
+    <link name="base_link">
+      <inertial>
+        <origin xyz="0.021112 0 -0.005366" rpy="0 0 0"/>
+        <mass value="6.921"/>
+        <inertia ixx="0.02448" ixy="0.00012166" ixz="0.0014849"
+                 iyy="0.098077" iyz="-3.12E-05" izz="0.107"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="file://$(find go2_description)/dae/base.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.3762 0.0935 0.114"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="base_footprint_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="base_footprint"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+    
+    <link name="base_footprint"/>
+
+    <!-- ====================== HEAD UPPER ====================== -->
+    <link name="Head_upper">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.001"/>
+        <inertia ixx="9.6e-06" ixy="0" ixz="0"
+                 iyy="9.6e-06" iyz="0" izz="9.6e-06"/>
+      </inertial>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.05" length="0.09"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="Head_upper_joint" type="fixed" dont_collapse="true">
+      <parent link="base_link"/>
+      <child link="Head_upper"/>
+      <origin xyz="0.285 0 0.01" rpy="0 0 0"/>
+    </joint>
+
+    <!-- ====================== HEAD LOWER ====================== -->
+    <link name="Head_lower">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.001"/>
+        <inertia ixx="9.6e-06" ixy="0" ixz="0"
+                 iyy="9.6e-06" iyz="0" izz="9.6e-06"/>
+      </inertial>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="0.047"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="Head_lower_joint" type="fixed" dont_collapse="true">
+      <parent link="Head_upper"/>
+      <child link="Head_lower"/>
+      <origin xyz="0.008 0 -0.07" rpy="0 0 0"/>
+    </joint>
+
+  </xacro:macro>
+
+</robot>

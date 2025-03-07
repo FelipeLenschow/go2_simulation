@@ -12,11 +12,12 @@ find_package(hardware_interface REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
-find_package(go2_interfaces REQUIRED)
+find_package(unitree_go REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(tf2 REQUIRED)                        
-find_package(tf2_geometry_msgs REQUIRED) 
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(unitree_go REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -39,11 +40,11 @@ target_include_directories(${PROJECT_NAME}
     pluginlib
     rclcpp
     rclcpp_lifecycle
-    go2_interfaces
     std_msgs
     tf2_geometry_msgs
     tf2
     sensor_msgs
+    unitree_go
 )
  
 ament_target_dependencies(${PROJECT_NAME}
@@ -52,11 +53,11 @@ ament_target_dependencies(${PROJECT_NAME}
   rclcpp
   rclcpp_lifecycle
   hardware_interface
-  go2_interfaces
   std_msgs
   sensor_msgs
   tf2_geometry_msgs
-  tf2 
+  tf2
+  unitree_go
 )
 
   pluginlib_export_plugin_description_file(controller_interface go2_lowstates.xml)

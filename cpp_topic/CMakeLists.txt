@@ -14,7 +14,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(go2_interfaces REQUIRED)
+find_package(unitree_go REQUIRED)
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -26,8 +26,7 @@ add_executable(cpp_topic_publisher_spiral  src/cpp_topic_publisher_spiral.cpp)
 
 ament_target_dependencies(cpp_topic_publisher_spiral
 rclcpp
-go2_interfaces
-
+unitree_go
 )
 
 install(TARGETS

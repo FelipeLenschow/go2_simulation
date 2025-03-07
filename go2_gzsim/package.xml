@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>go2_gzsim</name>
+  <version>0.1.0</version>
+  <description>Gazebo simulation package for the GO2 quadruped robot.</description>
+  <maintainer email="your_email@example.com">Your Name</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend>
+  <depend>gazebo_ros</depend>
+  <depend>gazebo_msgs</depend>
+  <depend>xacro</depend>
+  <depend>robot_state_publisher</depend>
+  <depend>go2_description</depend>
+  <exec_depend>go2_remap</exec_depend>
+
+
+  <!-- Export information -->
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

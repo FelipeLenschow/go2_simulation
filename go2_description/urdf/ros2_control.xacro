@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- Define effort limits for each joint type -->
+  <xacro:property name="effort_limit_hip" value="23.7"/>
+  <xacro:property name="effort_limit_thigh" value="23.7"/>
+  <xacro:property name="effort_limit_calf" value="45.43"/>
+
+  <!-- Define the macro for ROS 2 Control Configuration -->
+  <xacro:macro name="ros2_control_config" params="system_name plugin_name">
+    <ros2_control name="${system_name}" type="system">
+      <hardware>
+        <plugin>${plugin_name}</plugin>
+        <param name="update_rate">1000</param>
+      </hardware>
+
+      <!-- Define joint control interfaces -->
+      <xacro:macro name="joint_control" params="joint_name effort_limit">
+        <joint name="${joint_name}">
+          <command_interface name="effort">
+            <param name="min">${-effort_limit}</param>
+            <param name="max">${effort_limit}</param>
+          </command_interface>
+          <state_interface name="position"/>
+          <state_interface name="velocity"/>
+          <state_interface name="effort"/>
+        </joint>
+      </xacro:macro>
+
+      <!-- Instantiate joint controls with specific effort limits -->
+      <xacro:joint_control joint_name="FL_hip_joint" effort_limit="${effort_limit_hip}"/>
+      <xacro:joint_control joint_name="FL_thigh_joint" effort_limit="${effort_limit_thigh}"/>
+      <xacro:joint_control joint_name="FL_calf_joint" effort_limit="${effort_limit_calf}"/>
+
+      <xacro:joint_control joint_name="FR_hip_joint" effort_limit="${effort_limit_hip}"/>
+      <xacro:joint_control joint_name="FR_thigh_joint" effort_limit="${effort_limit_thigh}"/>
+      <xacro:joint_control joint_name="FR_calf_joint" effort_limit="${effort_limit_calf}"/>
+
+      <xacro:joint_control joint_name="RL_hip_joint" effort_limit="${effort_limit_hip}"/>
+      <xacro:joint_control joint_name="RL_thigh_joint" effort_limit="${effort_limit_thigh}"/>
+      <xacro:joint_control joint_name="RL_calf_joint" effort_limit="${effort_limit_calf}"/>
+
+      <xacro:joint_control joint_name="RR_hip_joint" effort_limit="${effort_limit_hip}"/>
+      <xacro:joint_control joint_name="RR_thigh_joint" effort_limit="${effort_limit_thigh}"/>
+      <xacro:joint_control joint_name="RR_calf_joint" effort_limit="${effort_limit_calf}"/>
+
+    </ros2_control>
+  </xacro:macro>
+
+  <!-- Conditional Execution -->
+  <xacro:if value="${simulation}">
+    <xacro:ros2_control_config 
+      system_name="GazeboSimSystem" 
+      plugin_name="gz_ros2_control/GazeboSimSystem"/>
+  </xacro:if>
+  
+  <xacro:unless value="${simulation}">
+    <xacro:ros2_control_config 
+      system_name="MockHardwareSystem" 
+      plugin_name="mock_components/GenericSystem"/>
+  </xacro:unless>
+
+</robot>

@@ -21,22 +21,33 @@ namespace go2_jointcontroller
           model()
     {
         const auto package_share_path = ament_index_cpp::get_package_share_directory("go2_description");
-        const auto urdf_path = std::filesystem::path(package_share_path) / "urdf" / "go2.xacro.urdf";
+        const auto xacro_path = std::filesystem::path(package_share_path) / "urdf" / "go2.xacro.urdf";
+        const auto urdf_path = std::filesystem::temp_directory_path() / "go2.urdf";
 
-        std::cout << urdf_path << std::endl;
+        // Convert Xacro to URDF using ROS 2 xacro CLI
+        std::string command = "ros2 run xacro xacro " + xacro_path.string() + " -o " + urdf_path.string();
+        int result = std::system(command.c_str());
+
+        if (result != 0)
+        {
+            std::cerr << "Error: Failed to convert Xacro to URDF!" << std::endl;
+            return;
+        }
+
+        std::cout << "Converted Xacro to URDF: " << urdf_path << std::endl;
 
         // Create a set of Pinocchio models and data.
         pinocchio::urdf::buildModel(urdf_path, model);
 
         data = std::make_shared<pinocchio::Data>(model);
-        control_mode = 2;
-        std::cout << model.name << std::endl;
+        control_mode = 1;
+        // std::cout << model.name << std::endl;
 
-        for (int i = 0; i < 13; i++)
-        {
-            std::cout << model.names[i] << std::endl;
-            std::cout << "---" << std::endl;
-        }
+        // for (int i = 0; i < 13; i++)
+        // {
+        //     std::cout << model.names[i] << std::endl;
+        //     std::cout << "---" << std::endl;
+        // }
     }
 
     controller_interface::CallbackReturn Go2JointController::on_init()
@@ -46,6 +57,7 @@ namespace go2_jointcontroller
             auto_declare<std::vector<std::string>>("joints", joint_names_);
             auto_declare<double>("gain.Kp", 60.0);
             auto_declare<double>("gain.Kd", 5.0);
+            auto_declare<double>("up_rate", 200.0);
         }
         catch (const std::exception &e)
         {
@@ -97,8 +109,9 @@ namespace go2_jointcontroller
         }
         auto kp_gain_ = get_node()->get_parameter("gain.Kp").get_value<double>();
         auto kd_gain_ = get_node()->get_parameter("gain.Kd").get_value<double>();
+        auto _update_rate = get_node()->get_parameter("up_rate").get_value<double>();
+        sample_time = 1.0 / _update_rate;
 
-        // Initialize values
         for (size_t i = 0; i < 12; i++)
         {
             kp[i] = kp_gain_;
@@ -107,7 +120,7 @@ namespace go2_jointcontroller
         }
         // TODO: use the name of topic from the YAML file
         lowstate_subscriber_ = get_node()->create_subscription<lowStates>(
-            "go2_lowstates/LowStates", rclcpp::SystemDefaultsQoS(),
+            "/lowstate", rclcpp::SystemDefaultsQoS(),
             [this](const std::shared_ptr<lowStates> msg) -> void
             {
                 std::lock_guard<std::mutex> lock(this->mutex_controller);
@@ -138,7 +151,7 @@ namespace go2_jointcontroller
                 }
             });
 
-        joints_cmd_publisher_ = get_node()->create_publisher<lowCmd>("go2_actuator/LowCommands", 10);
+        joints_cmd_publisher_ = get_node()->create_publisher<lowCmd>("/lowcmd", 10);
 
         lowCmd_msg.head[0] = 0xFE;
         lowCmd_msg.head[1] = 0xEF;
@@ -176,59 +189,76 @@ namespace go2_jointcontroller
     }
 
     controller_interface::return_type Go2JointController::update(
-        const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
+        const rclcpp::Time &time, const rclcpp::Duration & /*period*/)
     {
 
-        std::lock_guard<std::mutex> lock(this->mutex_controller);
+        if (last_update_time_ == 0)
+        {
+            last_update_time_ = time.nanoseconds();
+        }
+
+        // Compute time difference since last update
+        elapsed_time = (time.nanoseconds() - last_update_time_) * 1e-9; // Convert ns to seconds
+
+        // const auto logger = get_node()->get_logger();
+        if (elapsed_time >= sample_time) // Run every 4ms (250Hz)
         {
 
-            try
+            std::lock_guard<std::mutex> lock(this->mutex_controller);
             {
-                switch (control_mode)
+
+                try
                 {
-                case 1: // PD only
-                    for (int j = 0; j < 12; j++)
+                    control_mode = 1;
+                    switch (control_mode)
                     {
-                        lowCmd_msg.motor_cmd[j].q = qr[j];
-                        lowCmd_msg.motor_cmd[j].dq = dqr[j];
-                        lowCmd_msg.motor_cmd[j].kp = kp[j];
-                        lowCmd_msg.motor_cmd[j].kd = kd[j];
-                        lowCmd_msg.motor_cmd[j].tau = 0;
+                    case 1: // PD only
+                        for (int j = 0; j < 12; j++)
+                        {
+                            lowCmd_msg.motor_cmd[j].q = qr[j];
+                            lowCmd_msg.motor_cmd[j].dq = dqr[j];
+                            lowCmd_msg.motor_cmd[j].kp = kp[j];
+                            lowCmd_msg.motor_cmd[j].kd = kd[j];
+                            lowCmd_msg.motor_cmd[j].tau = 0;
+                        }
+                        break;
+
+                    case 2: // PD + Gravity Compensation
+
+                        computePD();
+                        computeG();
+                        for (int j = 0; j < 12; j++)
+                        {
+                            lowCmd_msg.motor_cmd[j].q = 0;
+                            lowCmd_msg.motor_cmd[j].dq = 0;
+                            lowCmd_msg.motor_cmd[j].kp = 0;
+                            lowCmd_msg.motor_cmd[j].kd = 0;
+                            lowCmd_msg.motor_cmd[j].tau = commanded_effort[j] + tauG[j];
+                        }
+                        break;
+
+                    default:
+                        RCLCPP_ERROR(get_node()->get_logger(), "Invalid control mode: %d", control_mode);
+                        return controller_interface::return_type::ERROR;
                     }
-                    break;
 
-                case 2: // PD + Gravity Compensation
+                    // Publish the control message
+                    lowCmd_msg.crc = crc32_core((uint32_t *)&lowCmd_msg, (sizeof(lowCmd) >> 2) - 1);
+                    joints_cmd_publisher_->publish(lowCmd_msg);
 
-                    computePD();
-                    computeG();
-                    for (int j = 0; j < 12; j++)
-                    {
-                        lowCmd_msg.motor_cmd[j].q = 0;
-                        lowCmd_msg.motor_cmd[j].dq = 0;
-                        lowCmd_msg.motor_cmd[j].kp = 0;
-                        lowCmd_msg.motor_cmd[j].kd = 0;
-                        lowCmd_msg.motor_cmd[j].tau = commanded_effort[j] + tauG[j];
-                    }
-                    break;
+                    return controller_interface::return_type::OK;
+                }
+                catch (const std::exception &e)
+                {
 
-                default:
-                    RCLCPP_ERROR(get_node()->get_logger(), "Invalid control mode: %d", control_mode);
+                    RCLCPP_ERROR(get_node()->get_logger(), "Exception in update(): %s", e.what());
                     return controller_interface::return_type::ERROR;
                 }
-
-                // Publish the control message
-                lowCmd_msg.crc = crc32_core((uint32_t *)&lowCmd_msg, (sizeof(lowCmd) >> 2) - 1);
-                joints_cmd_publisher_->publish(lowCmd_msg);
-
-                return controller_interface::return_type::OK;
             }
-            catch (const std::exception &e)
-            {
 
-                RCLCPP_ERROR(get_node()->get_logger(), "Exception in update(): %s", e.what());
-                return controller_interface::return_type::ERROR;
-            }
+            last_update_time_ = time.nanoseconds(); // Reset timer
         }
+        return controller_interface::return_type::OK;
     }
 
     void Go2JointController::computeG()
@@ -243,7 +273,7 @@ namespace go2_jointcontroller
         {
             q_e[index] = qr[index] - q[index];
             dq_e[index] = dqr[index] - dq[index];
-            commanded_effort[index] = kp[index] * q_e[index] + 1.25 * dq_e[index];
+            commanded_effort[index] = kp[index] * q_e[index] + 1 * dq_e[index];
         }
     }
 
@@ -278,7 +308,6 @@ namespace go2_jointcontroller
 
         return CRC32;
     }
-
 }
 
 #include <pluginlib/class_list_macros.hpp>

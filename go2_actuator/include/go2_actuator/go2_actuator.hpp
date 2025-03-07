@@ -4,7 +4,7 @@
 #include "controller_interface/controller_interface.hpp"
 #include "controller_interface/helpers.hpp"
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
-#include "go2_interfaces/msg/low_cmd.hpp"
+#include "unitree_go/msg/low_cmd.hpp"
 
 #include "std_msgs/msg/float64_multi_array.hpp"
 
@@ -18,7 +18,7 @@
 
 namespace go2_actuator
 {
-    using lowCmd = go2_interfaces::msg::LowCmd;
+    using lowCmd = unitree_go::msg::LowCmd;
 
     class Go2Actuator : public controller_interface::ControllerInterface
     {
@@ -102,6 +102,10 @@ namespace go2_actuator
 
         float x = 0;
         float _startPos[12] = {0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
+
+        double sample_time = 0;
+        double elapsed_time = 0;
+        double last_update_time_ = 0;
     };
 
 }

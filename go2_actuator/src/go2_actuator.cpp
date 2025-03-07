@@ -40,6 +40,7 @@ namespace go2_actuator
 
             auto_declare<double>("gain.Kp", 60.0);
             auto_declare<double>("gain.Kd", 5.0);
+            auto_declare<double>("up_rate", 250.0);
             auto_declare<std::vector<double>>("joints_references", {});
         }
         catch (const std::exception &e)
@@ -156,6 +157,8 @@ namespace go2_actuator
         // Gains update //
         Kp_gain = get_node()->get_parameter("gain.Kp").get_value<double>();
         Kd_gain = get_node()->get_parameter("gain.Kd").get_value<double>();
+        auto _update_rate = get_node()->get_parameter("up_rate").get_value<double>();
+        sample_time = 1.0 / _update_rate;
 
         std::vector<double> joits_references = get_node()->get_parameter("joints_references").get_value<std::vector<double>>();
 
@@ -170,7 +173,7 @@ namespace go2_actuator
         }
 
         joints_reference_subscriber_ = get_node()->create_subscription<lowCmd>(
-            "~/LowCommands", rclcpp::SystemDefaultsQoS(),
+            "/lowcmd", rclcpp::SystemDefaultsQoS(),
             [this](const std::shared_ptr<lowCmd> msg) -> void
             {
                 std::lock_guard<std::mutex> lock(this->mutex_actuator);
@@ -186,7 +189,7 @@ namespace go2_actuator
 
         // joints_control_publisher_ = get_node()->create_publisher<std_msgs::msg::Float64MultiArray>("~/LowCommands", 10);
 
-        RCLCPP_INFO(logger, "Impedance actuator gains update");
+        RCLCPP_INFO(logger, "Actuator update");
 
         return CallbackReturn::SUCCESS;
     }
@@ -195,7 +198,7 @@ namespace go2_actuator
     {
 
         const auto logger = get_node()->get_logger();
-        RCLCPP_INFO(logger, "Activing impedance actuator");
+        RCLCPP_INFO(logger, "Activing actuator");
 
         // order all joints in the storage
         for (const auto &interface : command_interface_types_)
@@ -234,7 +237,7 @@ namespace go2_actuator
     controller_interface::CallbackReturn Go2Actuator::on_deactivate(const rclcpp_lifecycle::State &)
     {
         const auto logger = get_node()->get_logger();
-        RCLCPP_INFO(logger, "Deactiveting impedance actuator");
+        RCLCPP_INFO(logger, "Deactiveting actuator");
 
         for (auto index = 0ul; index < joint_names_.size(); ++index)
         {
@@ -253,42 +256,53 @@ namespace go2_actuator
     }
 
     controller_interface::return_type Go2Actuator::update(
-        const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
+        const rclcpp::Time &time, const rclcpp::Duration & /*period*/)
     {
-        const auto logger = get_node()->get_logger();
-
-        std::lock_guard<std::mutex> lock(this->mutex_actuator);
+        if (last_update_time_ == 0)
         {
+            last_update_time_ = time.nanoseconds();
+        }
 
-            if (tau[0] != 0)
+        // Compute time difference since last update
+        elapsed_time = (time.nanoseconds() - last_update_time_) * 1e-9; // Convert ns to seconds
+
+        // const auto logger = get_node()->get_logger();
+        if (elapsed_time >= sample_time) // Run every 4ms (250Hz)
+        {
+            std::lock_guard<std::mutex> lock(this->mutex_actuator);
             {
-                for (auto index{0}; index < 12; index++)
+                if (tau[0] != 0)
                 {
-                    (void)joint_command_interface_[0][index].get().set_value(tau[index]);
+                    for (auto index{0}; index < 12; index++)
+                    {
+                        (void)joint_command_interface_[0][index].get().set_value(tau[index]);
+                    }
+                }
+                else if (kp[0] != 0)
+                {
+                    for (auto index{0}; index < 12; index++)
+                    {
+                        // get the joint position
+                        q[index] = joint_state_interface_[0][index].get().get_value();
+                        // get the joint velocity
+                        dq[index] = joint_state_interface_[1][index].get().get_value();
+
+                        // compute the error position
+                        q_e[index] = qr[index] - q[index];
+                        dq_e[index] = dqr[index] - dq[index];
+
+                        double tau_ = kp[index] * q_e[index] + kd[index] * dq_e[index];
+
+                        (void)joint_command_interface_[0][index].get().set_value(tau_);
+                    }
+                }
+                else
+                {
+                    std::cout << "ERROR: Kp, Kd and Tau are zero" << std::endl;
                 }
             }
-            else if (kp[0] != 0)
-            {
-                for (auto index{0}; index < 12; index++)
-                {
-                    // get the joint position
-                    q[index] = joint_state_interface_[0][index].get().get_value();
-                    // get the joint velocity
-                    dq[index] = joint_state_interface_[1][index].get().get_value();
 
-                    // compute the error position
-                    q_e[index] = qr[index] - q[index];
-                    dq_e[index] = dqr[index] - dq[index];
-
-                    double tau_ = kp[index] * q_e[index] + kd[index] * dq_e[index];
-
-                    (void)joint_command_interface_[0][index].get().set_value(tau_);
-                }
-            }
-            else
-            {
-                std::cout << "ERROR: Kp, Kd and Tau are zero" << std::endl;
-            }
+            last_update_time_ = time.nanoseconds(); // Reset timer
         }
         return controller_interface::return_type::OK;
     }

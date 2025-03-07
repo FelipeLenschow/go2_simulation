@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:macro name="sensors">
+    
+    <!-- ====================== FRONT CAMERA ====================== -->
+    <link name="front_camera">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0"/>
+        <inertia ixx="0" ixy="0" ixz="0"
+                 iyy="0" iyz="0" izz="0"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.01" length="0.01"/>
+        </geometry>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.05" length="0.09"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="front_camera_joint" type="fixed">
+      <parent link="Head_upper"/>
+      <child link="front_camera"/>
+      <origin xyz="0.045 0 0.03" rpy="-1.5708 0 -1.5708"/>
+    </joint>
+
+    <!-- ====================== IMU ====================== -->
+    <link name="imu">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0"/>
+        <inertia ixx="0" ixy="0" ixz="0"
+                 iyy="0" iyz="0" izz="0"/>
+      </inertial>
+    </link>
+
+    <joint name="imu_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="imu"/>
+      <origin xyz="-0.02557 0 0.04232" rpy="0 0 0"/>
+      <axis xyz="0 0 0"/>
+    </joint>
+
+    <!-- ====================== FRONT LIDAR CAMERA ====================== -->
+    <link name="radar">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0"/>
+        <inertia ixx="0" ixy="0" ixz="0"
+                 iyy="0" iyz="0" izz="0"/>
+      </inertial>
+    </link>
+
+    <joint name="radar_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="radar"/>
+      <origin xyz="0.28945 0 -0.046825" rpy="0 2.8782 0"/>
+      <axis xyz="0 0 0"/>
+    </joint>
+
+  </xacro:macro>
+
+</robot>

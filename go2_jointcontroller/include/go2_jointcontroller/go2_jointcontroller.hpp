@@ -13,8 +13,8 @@
 
 #include "std_msgs/msg/float64_multi_array.hpp"
 
-#include "go2_interfaces/msg/low_state.hpp"
-#include "go2_interfaces/msg/low_cmd.hpp"
+#include "unitree_go/msg/low_state.hpp"
+#include "unitree_go/msg/low_cmd.hpp"
 
 #include <filesystem>
 #include <pinocchio/algorithm/model.hpp>
@@ -25,8 +25,8 @@
 
 namespace go2_jointcontroller
 {
-    using lowCmd = go2_interfaces::msg::LowCmd;
-    using lowStates = go2_interfaces::msg::LowState;
+    using lowCmd = unitree_go::msg::LowCmd;
+    using lowStates = unitree_go::msg::LowState;
 
     class Go2JointController : public controller_interface::ControllerInterface
     {
@@ -98,6 +98,10 @@ namespace go2_jointcontroller
         uint32_t control_mode = 0;
 
         std::mutex mutex_controller;
+
+        double sample_time = 0;
+        double elapsed_time = 0;
+        double last_update_time_ = 0;
     };
 
 }

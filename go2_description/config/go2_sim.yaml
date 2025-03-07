@@ -2,12 +2,6 @@ controller_manager:
   ros__parameters:
     update_rate: 1000  # Hz
 
-    # joint_state_broadcaster:
-    #   type: joint_state_broadcaster/JointStateBroadcaster
-    
-    # go2_controller:
-    #   type: go2_controller/Go2Controller
-
     go2_actuator:
       type: go2_actuator/Go2Actuator
 
@@ -16,48 +10,17 @@ controller_manager:
   
     go2_jointcontroller:
       type: go2_jointcontroller/Go2JointController
-      
-# go2_controller:
-#   ros__parameters:
-#     joints:
-#       - FL_hip_joint
-#       - FL_thigh_joint
-#       - FL_calf_joint
-#       - FR_hip_joint
-#       - FR_thigh_joint
-#       - FR_calf_joint
-#       - RL_hip_joint
-#       - RL_thigh_joint
-#       - RL_calf_joint
-#       - RR_hip_joint
-#       - RR_thigh_joint
-#       - RR_calf_joint
 
-#     command_interfaces: 
-#       - effort
-    
-#     state_interfaces:
-#       - position
-#       - velocity
-#       - effort
-
-#     gain:
-#       Kp: 60.0
-#       Kd: 5.0
-      
-    
-#     joints_references: [ 0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65]
-    
 
 go2_actuator:
   ros__parameters:
     joints:
-      - FL_hip_joint
-      - FL_thigh_joint
-      - FL_calf_joint
       - FR_hip_joint
       - FR_thigh_joint
       - FR_calf_joint
+      - FL_hip_joint
+      - FL_thigh_joint
+      - FL_calf_joint
       - RL_hip_joint
       - RL_thigh_joint
       - RL_calf_joint
@@ -76,6 +39,8 @@ go2_actuator:
     gain:
       Kp: 60.0
       Kd: 5.0
+
+    up_rate: 1000.0
           
     joints_references: [ 0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65]
     
@@ -83,12 +48,12 @@ go2_actuator:
 go2_lowstates:
   ros__parameters:
     joints:
-      - FL_hip_joint
-      - FL_thigh_joint
-      - FL_calf_joint
       - FR_hip_joint
       - FR_thigh_joint
       - FR_calf_joint
+      - FL_hip_joint
+      - FL_thigh_joint
+      - FL_calf_joint
       - RL_hip_joint
       - RL_thigh_joint
       - RL_calf_joint
@@ -101,23 +66,25 @@ go2_lowstates:
       - position
       - velocity
 
-    robot_states_feedback_rate: 100.0
+    up_rate: 1000.0
 
 go2_jointcontroller:
   ros__parameters:
     joints:
-      - FL_hip_joint
-      - FL_thigh_joint
-      - FL_calf_joint
       - FR_hip_joint
       - FR_thigh_joint
       - FR_calf_joint
+      - FL_hip_joint
+      - FL_thigh_joint
+      - FL_calf_joint
       - RL_hip_joint
       - RL_thigh_joint
       - RL_calf_joint
       - RR_hip_joint
       - RR_thigh_joint
       - RR_calf_joint
+
+    up_rate: 250.0
 
     gain:
       Kp: 60.0

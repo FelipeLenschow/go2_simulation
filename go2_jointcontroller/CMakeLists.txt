@@ -12,11 +12,11 @@ find_package(hardware_interface REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
-find_package(go2_interfaces REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(pinocchio REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(unitree_go REQUIRED)
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -35,8 +35,8 @@ target_include_directories(${PROJECT_NAME}
     pluginlib
     rclcpp
     rclcpp_lifecycle
-    go2_interfaces
     std_msgs
+    unitree_go
 )
  
 ament_target_dependencies(${PROJECT_NAME}
@@ -45,8 +45,8 @@ ament_target_dependencies(${PROJECT_NAME}
   rclcpp
   rclcpp_lifecycle
   hardware_interface
-  go2_interfaces
   std_msgs
+  unitree_go
 )
 
   pluginlib_export_plugin_description_file(controller_interface go2_jointcontroller.xml)

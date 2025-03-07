@@ -4,18 +4,18 @@
 #include "controller_interface/controller_interface.hpp"
 #include "controller_interface/helpers.hpp"
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
-#include "go2_interfaces/msg/low_state.hpp"
+#include "unitree_go/msg/low_state.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "sensor_msgs/msg/imu.hpp"
+#include <unitree_go/msg/low_state.hpp>
 
 namespace go2_lowstates
 {
-    using lowStates = go2_interfaces::msg::LowState;
+    using lowStates = unitree_go::msg::LowState;
     using imuStates = sensor_msgs::msg::Imu;
     using effortstates = std_msgs::msg::Float64MultiArray;
-    using footforce =
 
-        class Go2Lowstates : public controller_interface::ControllerInterface
+    class Go2Lowstates : public controller_interface::ControllerInterface
     {
     public:
         // GO2_LOWSTATES_PUBLIC
@@ -101,6 +101,10 @@ namespace go2_lowstates
         rclcpp::Publisher<lowStates>::SharedPtr go2_lowstates_publisher;
         rclcpp::Subscription<imuStates>::SharedPtr imu_subscriber_;       // subscrevendo as informações do tipo imuStates no ponteiro imu_subscriber_
         rclcpp::Subscription<effortstates>::SharedPtr effort_subscriber_; // subscrevendo as informações do tipo std_msgs.... no ponteiro effort_subscriber_
+
+        double sample_time = 0;
+        double elapsed_time = 0;
+        double last_update_time_ = 0;
     };
 
 }

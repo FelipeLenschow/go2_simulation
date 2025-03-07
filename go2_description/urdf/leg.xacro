@@ -1,0 +1,217 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:macro name="leg" params="name x y mirror_x mirror_y">
+
+    <!-- Set mesh variables -->
+    <xacro:property name="thigh_mesh" value="file://$(find go2_description)/dae/thigh.dae"/>
+    <xacro:property name="calf_mesh" value="file://$(find go2_description)/dae/calf.dae"/>
+    <xacro:property name="thigh_y" value="0.0955"/>
+
+    <xacro:if value="${mirror_y == -1}">
+      <xacro:property name="thigh_mesh" value="file://$(find go2_description)/dae/thigh_mirror.dae"/>
+      <xacro:property name="calf_mesh" value="file://$(find go2_description)/dae/calf_mirror.dae"/>
+      <xacro:property name="thigh_y" value="-0.0955"/>
+    </xacro:if>
+
+    <!-- Define properties values for the hip -->
+    <xacro:property name="com_x" value="${mirror_y * -0.0054}"/>
+    <xacro:property name="com_y" value="${mirror_x * 0.00194}"/>
+    <!-- <xacro:property name="vis_r" value="${(1 - mirror_x) * 3.1415/2}"/>
+    <xacro:property name="vis_p" value="${(1 - mirror_y) * 3.1415/2}"/>
+    <xacro:property name="vis_y" value="0"/> -->
+    <xacro:property name="ixx" value="0.00048"/>
+    <xacro:property name="iyy" value="0.000884"/>
+    <xacro:property name="izz" value="0.000596"/>
+    <xacro:property name="ixy" value="${mirror_x * -3.01e-6}"/>
+    <xacro:property name="ixz" value="${mirror_y * 1.11e-6}"/>
+    <xacro:property name="iyz" value="${mirror_x * mirror_y * 1.42e-6}"/>
+
+    <xacro:if value="${name == 'FL'}">
+      <xacro:property name="vis_r" value="0"/>
+      <xacro:property name="vis_p" value="0"/>
+      <xacro:property name="vis_y" value="0"/>
+    </xacro:if>
+
+    <xacro:if value="${name == 'FR'}">
+      <xacro:property name="vis_r" value="3.1415"/>
+      <xacro:property name="vis_p" value="0"/>
+      <xacro:property name="vis_y" value="0"/>
+    </xacro:if>
+
+    <xacro:if value="${name == 'RL'}">
+      <xacro:property name="vis_r" value="0"/>
+      <xacro:property name="vis_p" value="3.1415"/>
+      <xacro:property name="vis_y" value="0"/>
+    </xacro:if>
+
+    <xacro:if value="${name == 'RR'}">
+      <xacro:property name="vis_r" value="3.1415"/>
+      <xacro:property name="vis_p" value="3.1415"/>
+      <xacro:property name="vis_y" value="0"/>
+    </xacro:if>
+
+
+    <!-- Hip Link -->
+    <link name="${name}_hip">
+      <inertial>
+        <origin xyz="${com_x}  ${com_y} -0.000105" rpy="0 0 0"/>
+        <mass value="0.678"/>
+        <inertia ixx="${ixx}" ixy="${ixy}" ixz="${ixz}"
+                 iyy="${iyy}" iyz="${iyz}" izz="${izz}"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="${vis_r} ${vis_p} ${vis_y}" />
+        <geometry>
+          <mesh filename="file://$(find go2_description)/dae/hip.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <origin rpy="1.5707963267948966 0 0" xyz="0 ${mirror_y * 0.08} 0" />
+        <geometry>
+          <cylinder length="0.04" radius="0.046"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Hip Joint -->
+    <joint name="${name}_hip_joint" type="revolute">
+      <origin xyz="${x} ${y} 0" rpy="0 0 0"/>
+      <parent link="base_link"/>
+      <child link="${name}_hip"/>
+      <axis xyz="1 0 0"/>
+      <limit lower="-1.0472" upper="1.0472" effort="23.7" velocity="30.1"/>
+    </joint>
+
+    <!-- Thigh Link -->
+    <link name="${name}_thigh">
+      <inertial>
+        <origin xyz="-0.00374 ${mirror_x * 0.0223} -0.0327" rpy="0 0 0"/>
+        <mass value="1.152"/>
+        <inertia ixx="0.00584" ixy="${mirror_x * -8.72e-5}" ixz="-0.000289" 
+                 iyy="0.0058" iyz="${mirror_x * mirror_y * -0.000808}" izz="0.00103"/>
+      </inertial>
+      <visual>
+        <geometry>
+          <mesh filename="${thigh_mesh}"/>
+        </geometry>
+      </visual>
+      <collision>
+        <origin rpy="0 1.5707963267948966 0" xyz="0 0 -0.1065" />
+        <geometry>
+          <box size="0.213 0.0245 0.034"/>
+        </geometry>
+      </collision>
+    </link>
+
+
+    <!-- Thigh Joint -->
+    <joint name="${name}_thigh_joint" type="revolute">
+      <origin xyz="0 ${thigh_y} 0" rpy="0 0 0"/>
+      <parent link="${name}_hip"/>
+      <child link="${name}_thigh"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="-1.5708" upper="3.4907" effort="23.7" velocity="30.1"/>
+    </joint>
+
+    <!-- Calf Link -->
+    <link name="${name}_calf">
+      <inertial>
+        <origin xyz="0.00548 ${mirror_x * 0.000975} -0.115" rpy="0 0 0" />
+        <mass value="0.154"/>
+        <inertia ixx="0.00108" ixy="${mirror_x * -3.40e-7}" ixz="0" 
+                 iyy="0.0011" iyz="${mirror_x * mirror_y * -8.28e-6}" izz="3.29E-05"/>
+      </inertial>
+      <visual>
+        <geometry>
+          <mesh filename="${calf_mesh}"/>
+        </geometry>
+      </visual>
+      <collision>
+        <origin rpy="0 -0.2 0" xyz="0.008 0 -0.06" />
+        <geometry>
+          <cylinder length="0.12" radius="0.013"/>
+        </geometry>
+      </collision>
+    </link>
+
+
+    <!-- Calf Joint -->
+    <joint name="${name}_calf_joint" type="revolute">
+      <origin xyz="0 0 -0.213" rpy="0 0 0"/>
+      <parent link="${name}_thigh"/>
+      <child link="${name}_calf"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="-2.7227" upper="-0.83776" effort="45.43" velocity="15.70"/>
+    </joint>
+
+    <!-- Calf lower Joint (only colision) -->
+    <link name="${name}_calflower">
+      <collision>
+        <origin rpy="0 0 0" xyz="0 0 0" />
+        <geometry>
+          <cylinder length="0.065" radius="0.011" />
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Calf lower Joint -->
+    <joint name="${name}_calflower_joint" type="fixed">
+      <origin xyz="0.020 0 -0.148" rpy="0 0.05 0" />
+      <parent link="${name}_calf" />
+      <child link="${name}_calflower" />
+      <axis xyz="0 1 0" />
+    </joint>
+
+    <!-- Calf lower 1 Joint (only colision) -->
+
+    <link name="${name}_calflower1">
+      <collision>
+        <origin rpy="0 0 0" xyz="0 0 0" />
+        <geometry>
+          <cylinder length="0.03" radius="0.0155" />
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Calf lower 1 Joint -->
+    <joint name="${name}_calflower1_joint" type="fixed">
+      <origin xyz="-0.01 0 -0.04" rpy="0 0.48 0" />
+      <parent link="${name}_calflower" />
+      <child link="${name}_calflower1" />
+      <axis xyz="0 0 0" />
+    </joint>
+
+
+    <!-- Foot Link -->
+    <link name="${name}_foot">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.04"/>
+        <inertia ixx="9.6e-06" ixy="0" ixz="0"
+                 iyy="9.6e-06" iyz="0" izz="9.6e-06"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="file://$(find go2_description)/dae/foot.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <origin rpy="0 0 0" xyz="-0.002 0 0" />
+        <geometry>
+          <sphere radius="0.022"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Foot Joint (Fixed) -->
+    <joint name="${name}_foot_joint" type="fixed" dont_collapse="true">
+      <origin xyz="0 0 -0.213" rpy="0 0 0"/>
+      <parent link="${name}_calf"/>
+      <child link="${name}_foot"/>
+    </joint>
+
+  </xacro:macro>
+
+</robot>

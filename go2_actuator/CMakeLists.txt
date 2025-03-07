@@ -12,7 +12,7 @@ find_package(hardware_interface REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
-find_package(go2_interfaces REQUIRED)
+find_package(unitree_go REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(pinocchio REQUIRED)
 find_package(ament_index_cpp REQUIRED)
@@ -35,7 +35,7 @@ target_include_directories(${PROJECT_NAME}
     pluginlib
     rclcpp
     rclcpp_lifecycle
-    go2_interfaces
+    unitree_go
     std_msgs
 )
  
@@ -45,7 +45,7 @@ ament_target_dependencies(${PROJECT_NAME}
   rclcpp
   rclcpp_lifecycle
   hardware_interface
-  go2_interfaces
+  unitree_go
   std_msgs
 )
 
@@ -72,7 +72,7 @@ ament_target_dependencies(${PROJECT_NAME}
     pluginlib
     rclcpp
     rclcpp_lifecycle
-    go2_interfaces
+    unitree_go
    )
 
   target_link_libraries(${PROJECT_NAME} pinocchio::pinocchio)
