@@ -71,7 +71,7 @@ def generate_launch_description():
             "-y",
             "0",
             "-z",
-            "0.3",
+            "0.5",
         ],
     )
 
@@ -192,7 +192,7 @@ def generate_launch_description():
             ),
             RegisterEventHandler(
                 event_handler=OnProcessExit(
-                    target_action=go2_low_states_spawner,
+                    target_action=gz_spawn_entity,
                     on_exit=[go2_joint_controller],
                 )
             ),
@@ -204,7 +204,7 @@ def generate_launch_description():
             ),
             RegisterEventHandler(
                 event_handler=OnProcessStart(
-                    target_action=go2_remap_node,
+                    target_action=go2_low_states_spawner,
                     on_start=[rviz_node],
                 )
             ),

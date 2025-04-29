@@ -6,11 +6,7 @@
 #include "rclcpp/logging.hpp"
 #include "rclcpp/parameter.hpp"
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
-// #include "rclcpp/qos.hpp"
-// #include "rclcpp/qos_event.hpp"
 #include "rclcpp/time.hpp"
-// #include "rclcpp_action/create_server.hpp"
-// #include "rclcpp_action/server_goal_handle.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
@@ -32,7 +28,7 @@ namespace go2_lowstates
         {
             auto_declare<std::vector<std::string>>("joints", joint_names_);
             auto_declare<std::vector<std::string>>("state_interfaces", state_interface_types_);
-            auto_declare<double>("up_rate", 200.0);
+            auto_declare<double>("up_rate", 1000.0);
         }
         catch (const std::exception &e)
         {
@@ -232,9 +228,6 @@ namespace go2_lowstates
 
             // get the joint velocity
             lowStates_msg.motor_state[index].dq = joint_state_interface_[1][index].get().get_value();
-
-            // get the joint acceleration
-            // lowStates_msg.motor_state[index].ddq = joint_state_interface_[2][index].get().get_value();
 
             // get the joint effort
             lowStates_msg.motor_state[index].tau_est = tau[index];

@@ -11,13 +11,22 @@ class MinimalPublisher : public rclcpp::Node
 {
 public:
     MinimalPublisher()
-        : Node("low_cmd"), motion_time(0), rate_count(0), toggle_pos(false)
+        : Node("low_cmd"), motion_time(0), rate_count(0)
     {
         publisher_ = this->create_publisher<lowCmd>("/go2_jointcontroller/JointControllerReferences", 1);
         // publisher_ = this->create_publisher<lowCmd>("/go2_actuator/LowCommands", 1);
 
-        // Começa na posição inicial
-        std::copy(std::begin(_targetPos_1), std::end(_targetPos_1), std::begin(_desPos));
+        // Inicializa posições
+        float targetPos1[12] = {0.2, 1.50, -2.65, 0.2, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
+        float targetPos2[12] = {0.1, 1.30, -1.36, 0.2, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
+        float startPos[12] = {0.0, 1.36, -2.00, 0.2, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
+
+        std::copy(std::begin(targetPos1), std::end(targetPos1), sequence[0]);
+        std::copy(std::begin(targetPos2), std::end(targetPos2), sequence[1]);
+        std::copy(std::begin(startPos), std::end(startPos), sequence[2]);
+
+        std::copy(std::begin(sequence[0]), std::end(sequence[0]), _startPos);
+        std::copy(std::begin(sequence[1]), std::end(sequence[1]), _desPos);
 
         timer_ = this->create_wall_timer(100ms, std::bind(&MinimalPublisher::publish_message, this));
     }
@@ -32,20 +41,44 @@ private:
         double rate = std::min(1.0, rate_count / 50.0);
         rate_count++;
 
-        // Interpola entre as posições
-        for (int j = 0; j < 12; j++)
+        if (paused)
         {
-            low_cmd.motor_cmd[j].q = _desPos[j];
-            low_cmd.motor_cmd[j].dq = 0;
-            low_cmd.motor_cmd[j].kp = 30.0;
-            low_cmd.motor_cmd[j].kd = 3;
-            low_cmd.motor_cmd[j].tau = 0;
+            // Durante pausa, manter posição atual
+            for (int j = 0; j < 12; j++)
+            {
+                low_cmd.motor_cmd[j].q = _desPos[j];
+                low_cmd.motor_cmd[j].dq = 0;
+                low_cmd.motor_cmd[j].kp = 60.0;
+                low_cmd.motor_cmd[j].kd = 5.0;
+                low_cmd.motor_cmd[j].tau = 0;
+            }
+
+            low_cmd.reserve = mode;
+            publisher_->publish(low_cmd);
+
+            pause_counter++;
+            if (pause_counter >= pause_duration)
+            {
+                paused = false;
+                pause_counter = 0;
+
+                // Atualiza a nova interpolação
+                current_step = (current_step + 1) % sequence_size;
+                std::copy(std::begin(_desPos), std::end(_desPos), _startPos);
+                std::copy(std::begin(sequence[current_step]), std::end(sequence[current_step]), _desPos);
+                rate_count = 0;
+            }
+            return;
         }
 
-        // Interpolação entre as posições (1 -> 2 ou 2 -> 1) com base no valor de `toggle_pos`
         for (int i = 0; i < 12; i++)
         {
-            low_cmd.motor_cmd[i].q = jointLinearInterpolation(_startPos[i], _desPos[i], rate);
+            double interpolated = jointLinearInterpolation(_startPos[i], _desPos[i], rate);
+            low_cmd.motor_cmd[i].q = interpolated;
+            low_cmd.motor_cmd[i].dq = 0;
+            low_cmd.motor_cmd[i].kp = 60.0;
+            low_cmd.motor_cmd[i].kd = 5.0;
+            low_cmd.motor_cmd[i].tau = 0;
         }
 
         low_cmd.reserve = mode;
@@ -54,30 +87,22 @@ private:
         // Alternância entre posições a cada 50 iterações
         if (rate >= 1.0)
         {
-            toggle_pos = !toggle_pos;
-
-            // Alterna entre _targetPos_1 e _targetPos_2 com base na direção da interpolação
-            if (toggle_pos)
+            // Chegou ao destino, inicia pausa se for targetPos_1
+            if (current_step == 0) // 0 representa targetPos1
             {
-                std::copy(std::begin(_targetPos_1), std::end(_targetPos_1), std::begin(_desPos));   // Interpolação de 1 para 2
-                std::copy(std::begin(_targetPos_2), std::end(_targetPos_2), std::begin(_startPos)); // Inicia a interpolação da 2 para 1
+                paused = true;
+                pause_counter = 0;
             }
             else
             {
-                std::copy(std::begin(_targetPos_2), std::end(_targetPos_2), std::begin(_desPos));   // Interpolação de 2 para 1
-                std::copy(std::begin(_targetPos_1), std::end(_targetPos_1), std::begin(_startPos)); // Inicia a interpolação de 1 para 2
-            }
-
-            rate_count = 0; // Reinicia interpolação
-            cout2_ += 1;
-            if (cout2_ == 4)
-            {
-                mode = 1; // Muda o modo para 2
-                cout2_ = 0;
+                // Continua normalmente para o próximo destino
+                current_step = (current_step + 1) % sequence_size;
+                std::copy(std::begin(_desPos), std::end(_desPos), _startPos);
+                std::copy(std::begin(sequence[current_step]), std::end(sequence[current_step]), _desPos);
+                rate_count = 0;
             }
         }
     }
-
     double jointLinearInterpolation(double q0, double qf, double rate)
     {
         return q0 + rate * (qf - q0);
@@ -85,20 +110,17 @@ private:
 
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Publisher<lowCmd>::SharedPtr publisher_;
-    bool toggle_pos = false;
-    int motion_time, rate_count;
-    float _desPos[12]; // Agora, _desPos é um array de 12 posições.
+    int motion_time, rate_count, pause_counter;
+    bool paused;
+    int current_step;
+    static const int sequence_size = 3;
+    static const int pause_duration = 20; // número de ciclos de 100ms para pausar (2s)
 
-    int cout2_ = 0;
-    uint32_t mode = 1;
+    float _startPos[12];
+    float _desPos[12];
+    float sequence[sequence_size][12];
 
-    // float _startPos[12] = {0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
-    // float _targetPos_1[12] = {0.0, 1.2, -2.05, 0.5, 0.8, -1.55, -0.2, 0.8, -1.55, 0.2, 1.0, -2.1};
-    // float _targetPos_2[12] = {0.2, 1.5, -1.8, 0.3, 1.2, -1.25, -0.1, 1.0, -1.2, 0.3, 1.0, -1.6};
-
-    float _startPos[12] = {0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
-    float _targetPos_1[12] = {0.0, 1.36, -2.5, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
-    float _targetPos_2[12] = {0.0, 1.36, -1.0, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
+    uint32_t mode = 4;
 };
 
 int main(int argc, char *argv[])

@@ -46,18 +46,6 @@ namespace go2_lowstates
         controller_interface::CallbackReturn on_deactivate(
             const rclcpp_lifecycle::State &previous_state) override;
 
-        // // GO2_CONTROLLER_PUBLIC
-        // controller_interface::CallbackReturn on_cleanup(
-        //     const rclcpp_lifecycle::State &previous_state) override;
-
-        // // GO2_CONTROLLER_PUBLIC
-        // controller_interface::CallbackReturn on_error(
-        //     const rclcpp_lifecycle::State &previous_state) override;
-
-        // // GO2_CONTROLLER_PUBLIC
-        // controller_interface::CallbackReturn on_shutdown(
-        //     const rclcpp_lifecycle::State &previous_state) override;
-
     private:
         void get_joints_info();
 
@@ -83,10 +71,6 @@ namespace go2_lowstates
             hardware_interface::HW_IF_VELOCITY,
             hardware_interface::HW_IF_EFFORT,
         };
-
-        // const std::vector<std::string> allowed_command_interface_types_ = {
-        //     hardware_interface::HW_IF_EFFORT,
-        // };
 
         template <typename T>
         using InterfaceReferences = std::vector<std::vector<std::reference_wrapper<T>>>;

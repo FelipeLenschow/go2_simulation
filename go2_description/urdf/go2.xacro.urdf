@@ -2,20 +2,36 @@
 <robot name="go2" xmlns:xacro="http://ros.org/wiki/xacro">
 
   <xacro:property name="simulation" default="True"/>
-  <xacro:property name="fixed_base" default="False"/>
-
-  <!-- Include the body (Torso) -->
-  <xacro:include filename="$(find go2_description)/urdf/torso.xacro"/>
-  <xacro:torso simulation="${simulation}" fixed_base="${fixed_base}"/>
-  
-  <!-- Include the leg definition -->
+  <xacro:property name="fixed_base" default="False"/>   
+  <xacro:arg name="DEBUG" default="false"/>
+      
+  <xacro:include filename="$(find go2_description)/urdf/const.xacro"/>
+  <xacro:include filename="$(find go2_description)/urdf/materials.xacro"/>
   <xacro:include filename="$(find go2_description)/urdf/leg.xacro"/>
 
+     <xacro:if value="$(arg DEBUG)">
+            <link name="world"/>
+            <joint name="base_static_joint" type="fixed">
+                <origin rpy="0 0 0" xyz="0 0 0"/>
+                <parent link="world"/>
+                <child link="base"/>
+            </joint>
+        </xacro:if> 
+
+  <!-- Include the body (Torso) -->
+
+  <xacro:include filename="$(find go2_description)/urdf/torso.xacro"/>
+
+  <xacro:torso simulation="${simulation}" fixed_base="${fixed_base}"/>
+  
+
   <!-- Instantiate the four legs -->
-  <xacro:leg name="FL" x="0.1934" y="0.0465" mirror_x="1" mirror_y="1"/>
-  <xacro:leg name="FR" x="0.1934" y="-0.0465" mirror_x="1" mirror_y="-1"/>
-  <xacro:leg name="RL" x="-0.1934" y="0.0465" mirror_x="-1" mirror_y="1"/>
-  <xacro:leg name="RR" x="-0.1934" y="-0.0465" mirror_x="-1" mirror_y="-1"/>
+  
+    <xacro:leg name="FL" mirror="1"  mirror_dae="True"   front_hind="1"  front_hind_dae="True"  />
+    <xacro:leg name="FR" mirror="-1" mirror_dae= "False" front_hind="1"  front_hind_dae="True"  />
+    <xacro:leg name="RL" mirror="1"  mirror_dae="True"   front_hind="-1" front_hind_dae="False" />
+    <xacro:leg name="RR" mirror="-1" mirror_dae="False"  front_hind="-1" front_hind_dae="False" />
+
 
   <!-- Include the sensors -->
   <xacro:include filename="$(find go2_description)/urdf/sensors.xacro"/>
@@ -25,11 +41,9 @@
   <!-- Include ROS 2 Control System -->
   <xacro:include filename="$(find go2_description)/urdf/ros2_control.xacro"/>
 
-<xacro:if value="${simulation}">
+ <xacro:if value="${simulation}">
   <xacro:include filename="$(find go2_description)/gz/gz.xacro"/>
   <xacro:gz_simulation/>
-</xacro:if>
-
-
+ </xacro:if> 
 
 </robot>

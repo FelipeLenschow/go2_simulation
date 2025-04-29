@@ -20,6 +20,8 @@
 #include <pinocchio/algorithm/model.hpp>
 #include <pinocchio/algorithm/rnea.hpp>
 #include "pinocchio/parsers/urdf.hpp"
+#include <pinocchio/algorithm/jacobian.hpp>
+#include <pinocchio/algorithm/frames.hpp>
 
 #include "ament_index_cpp/get_package_share_directory.hpp"
 
@@ -63,6 +65,12 @@ namespace go2_jointcontroller
 
         void computePD();
 
+        void computePD_COMPG();
+
+        void computePID();
+
+        void computePID_COMPG();
+
         uint32_t crc32_core(uint32_t *ptr, uint32_t len);
 
     protected:
@@ -76,17 +84,25 @@ namespace go2_jointcontroller
         Eigen::VectorXd dq;
         Eigen::VectorXd kp;
         Eigen::VectorXd kd;
-        Eigen::VectorXd tauG;
+        Eigen::VectorXd ki;
         Eigen::VectorXd tau;
+        Eigen::VectorXd tauG;
+        Eigen::VectorXd tau_;
         Eigen::VectorXd q_e;
+        Eigen::VectorXd qi_e;
         Eigen::VectorXd dq_e;
         Eigen::VectorXd qr;
         Eigen::VectorXd dqr;
+        Eigen::VectorXd mass;
         Eigen::VectorXd effort;
         Eigen::VectorXd commanded_effort;
-
-        Eigen::VectorXd v = Eigen::VectorXd::Zero(12);
-        Eigen::VectorXd a = Eigen::VectorXd::Zero(12);
+        Eigen::VectorXd vetor_pinocchio;
+        Eigen::VectorXd v;
+        Eigen::VectorXd a;
+        Eigen::MatrixXd J;
+        Eigen::MatrixXd J_linear;
+        Eigen::VectorXd tau_contrib;
+        Eigen::Vector3d F_grav;
 
         lowCmd lowCmd_msg;
 
@@ -102,6 +118,14 @@ namespace go2_jointcontroller
         double sample_time = 0;
         double elapsed_time = 0;
         double last_update_time_ = 0;
+
+        const std::vector<std::string> joint_names_sequence = {
+            "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
+            "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
+            "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint",
+            "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint"};
+
+        std::vector<pinocchio::FrameIndex> pinocchio_frames;
     };
 
 }

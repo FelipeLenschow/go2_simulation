@@ -88,6 +88,8 @@ namespace go2_actuator
     Go2Actuator::on_configure(
         const rclcpp_lifecycle::State &)
     {
+
+        std::cout << "he" << std::endl;
         const auto logger = get_node()->get_logger();
 
         joint_names_ = get_node()->get_parameter("joints").as_string_array();
@@ -271,14 +273,7 @@ namespace go2_actuator
         {
             std::lock_guard<std::mutex> lock(this->mutex_actuator);
             {
-                if (tau[0] != 0)
-                {
-                    for (auto index{0}; index < 12; index++)
-                    {
-                        (void)joint_command_interface_[0][index].get().set_value(tau[index]);
-                    }
-                }
-                else if (kp[0] != 0)
+                if (kp[0] != 0)
                 {
                     for (auto index{0}; index < 12; index++)
                     {
@@ -296,10 +291,23 @@ namespace go2_actuator
                         (void)joint_command_interface_[0][index].get().set_value(tau_);
                     }
                 }
+                // else if (tau[0] != 0)
                 else
                 {
-                    std::cout << "ERROR: Kp, Kd and Tau are zero" << std::endl;
+                    for (auto index{0}; index < 12; index++)
+                    {
+                        if (std::isfinite(tau[index]))
+                            (void)joint_command_interface_[0][index].get().set_value(tau[index]);
+                        else
+                            (void)joint_command_interface_[0][index].get().set_value(0);
+                        // (void)joint_command_interface_[0][index].get().set_value(0);
+                        // std::cout << "#####  " << index << "  #####" << tau[index] << std::endl;
+                    }
                 }
+                // else
+                // {
+                //     std::cout << "ERROR: Kp, Kd and Tau are zero" << std::endl;
+                // }
             }
 
             last_update_time_ = time.nanoseconds(); // Reset timer
