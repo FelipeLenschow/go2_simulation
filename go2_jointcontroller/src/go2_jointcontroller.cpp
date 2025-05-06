@@ -86,13 +86,14 @@ namespace go2_jointcontroller
         ki[1] = ki[4] = ki[7] = ki[10] = 25;
         ki[2] = ki[5] = ki[8] = ki[11] = 0;
     }
+
     controller_interface::CallbackReturn Go2JointController::on_init()
     {
         try
         {
             auto_declare<std::vector<std::string>>("joints", joint_names_);
-            auto_declare<double>("gain.Kp", 60.0);
-            auto_declare<double>("gain.Kd", 5.0);
+            // auto_declare<double>("gain.Kp", 60.0);
+            // auto_declare<double>("gain.Kd", 5.0);
             auto_declare<double>("up_rate", 200.0);
         }
         catch (const std::exception &e)
@@ -109,6 +110,7 @@ namespace go2_jointcontroller
     {
         return {controller_interface::interface_configuration_type::NONE};
     }
+
     controller_interface::InterfaceConfiguration
     Go2JointController::state_interface_configuration() const
     {
@@ -119,7 +121,6 @@ namespace go2_jointcontroller
     Go2JointController::on_configure(
         const rclcpp_lifecycle::State &)
     {
-
         auto logger = get_node()->get_logger();
 
         // Read parameters from ROS parameter server
@@ -130,15 +131,15 @@ namespace go2_jointcontroller
             RCLCPP_ERROR(logger, "No joint names found in parameters.");
             return CallbackReturn::FAILURE;
         }
-        auto kp_gain_ = get_node()->get_parameter("gain.Kp").get_value<double>();
-        auto kd_gain_ = get_node()->get_parameter("gain.Kd").get_value<double>();
+        // auto kp_gain_ = get_node()->get_parameter("gain.Kp").get_value<double>();
+        // auto kd_gain_ = get_node()->get_parameter("gain.Kd").get_value<double>();
         auto _update_rate = get_node()->get_parameter("up_rate").get_value<double>();
         sample_time = 1.0 / _update_rate;
 
         for (size_t i = 0; i < 12; i++)
         {
-            kp[i] = kp_gain_;
-            kd[i] = kd_gain_;
+            // kp[i] = kp_gain_;
+            // kd[i] = kd_gain_;
             tau[i] = 0.0;
         }
         // TODO: use the name of topic from the YAML file
@@ -159,7 +160,6 @@ namespace go2_jointcontroller
         controller_reference_subscriber_ = get_node()->create_subscription<lowCmd>(
             "go2_jointcontroller/JointControllerReferences", rclcpp::SystemDefaultsQoS(),
             [this](const std::shared_ptr<lowCmd> msg) -> void
-
             {
                 std::lock_guard<std::mutex> lock(this->mutex_controller);
                 control_mode = msg->reserve;
@@ -223,32 +223,28 @@ namespace go2_jointcontroller
         // Compute time difference since last update
         elapsed_time = (time.nanoseconds() - last_update_time_) * 1e-9; // Convert ns to seconds
 
-        // const auto logger = get_node()->get_logger();
-        if (elapsed_time >= sample_time) // Run every 4ms (250Hz)
+        const auto logger = get_node()->get_logger();
+        if (elapsed_time >= sample_time)
         {
-
             std::lock_guard<std::mutex> lock(this->mutex_controller);
             {
-
                 try
                 {
                     switch (control_mode)
                     {
                     case 1: // PD only
-
                         computePD();
                         for (int j = 0; j < 12; j++)
                         {
-                            lowCmd_msg.motor_cmd[j].q = 0;  // qr[j];
-                            lowCmd_msg.motor_cmd[j].dq = 0; // dqr[j];
-                            lowCmd_msg.motor_cmd[j].kp = 0; // kp[j];
-                            lowCmd_msg.motor_cmd[j].kd = 0; // kd[j];
+                            lowCmd_msg.motor_cmd[j].q = 0;
+                            lowCmd_msg.motor_cmd[j].dq = 0;
+                            lowCmd_msg.motor_cmd[j].kp = 0;
+                            lowCmd_msg.motor_cmd[j].kd = 0;
                             lowCmd_msg.motor_cmd[j].tau = commanded_effort[j];
                         }
                         break;
 
                     case 2: // PD + Gravity Compensation
-
                         computePD_COMPG();
                         computeG();
                         for (int j = 0; j < 12; j++)
@@ -262,7 +258,6 @@ namespace go2_jointcontroller
                         break;
 
                     case 3: // PID
-
                         computePID();
                         for (int j = 0; j < 12; j++)
                         {
@@ -289,7 +284,7 @@ namespace go2_jointcontroller
                         break;
 
                     default:
-                        RCLCPP_ERROR(get_node()->get_logger(), "Invalid control mode: %d", control_mode);
+                        RCLCPP_ERROR(logger, "Invalid control mode: %d", control_mode);
                         return controller_interface::return_type::ERROR;
                     }
 
@@ -302,7 +297,7 @@ namespace go2_jointcontroller
                 catch (const std::exception &e)
                 {
 
-                    RCLCPP_ERROR(get_node()->get_logger(), "Exception in update(): %s", e.what());
+                    RCLCPP_ERROR(logger, "Exception in update(): %s", e.what());
                     return controller_interface::return_type::ERROR;
                 }
             }
@@ -390,11 +385,14 @@ namespace go2_jointcontroller
 
     void Go2JointController::computePD()
     {
+        auto kp = get_node()->get_parameter("gain.PD.Kp").get_value<std::vector<double>>();
+        auto kd = get_node()->get_parameter("gain.PD.Kd").get_value<std::vector<double>>();
+
         for (auto index{0}; index < 12; index++)
         {
             q_e[index] = qr[index] - q[index];
             dq_e[index] = dqr[index] - dq[index];
-            commanded_effort[index] = 50 * q_e[index] + 0.7 * dq_e[index];
+            commanded_effort[index] = kp[index] * q_e[index] + kd[index] * dq_e[index];
         }
     }
 

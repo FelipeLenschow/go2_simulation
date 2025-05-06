@@ -16,19 +16,19 @@ namespace go2_actuator
 {
 
     Go2Actuator::Go2Actuator()
-        : controller_interface::ControllerInterface(),
-          joint_names_({})
-    {
-        q.resize(12);
-        dq.resize(12);
-        kp.resize(12);
-        kd.resize(12);
-        tau.resize(12);
-        q_e.resize(12);
-        dq_e.resize(12);
-        qr.resize(12);
-        dqr.resize(12);
-    }
+        : controller_interface::ControllerInterface()
+        , joint_names_({})
+        , q(12)
+        , dq(12)
+        , kp(12)
+        , kd(12)
+        , tau(12)
+        , qr(12)
+        , dqr(12)
+        , sample_time(0)
+        , elapsed_time(0)
+        , last_update_time_(0)
+    { }
 
     controller_interface::CallbackReturn Go2Actuator::on_init()
     {
@@ -89,7 +89,6 @@ namespace go2_actuator
         const rclcpp_lifecycle::State &)
     {
 
-        std::cout << "he" << std::endl;
         const auto logger = get_node()->get_logger();
 
         joint_names_ = get_node()->get_parameter("joints").as_string_array();
@@ -157,20 +156,19 @@ namespace go2_actuator
             get_interface_list(state_interface_types_).c_str());
 
         // Gains update //
-        Kp_gain = get_node()->get_parameter("gain.Kp").get_value<double>();
-        Kd_gain = get_node()->get_parameter("gain.Kd").get_value<double>();
+        // Kp_gain = get_node()->get_parameter("gain.Kp").get_value<double>();
+        // Kd_gain = get_node()->get_parameter("gain.Kd").get_value<double>();
         auto _update_rate = get_node()->get_parameter("up_rate").get_value<double>();
         sample_time = 1.0 / _update_rate;
 
-        std::vector<double> joits_references = get_node()->get_parameter("joints_references").get_value<std::vector<double>>();
+        std::vector<double> joints_references = get_node()->get_parameter("joints_references").get_value<std::vector<double>>();
 
         for (int index = 0; index < 12; index++)
         {
-
-            kp[index] = Kp_gain;
-            kd[index] = Kd_gain;
+            kp[index] = 0; //Kp_gain;
+            kd[index] = 0; //Kd_gain;
             tau[index] = 0;
-            qr[index] = joits_references[index];
+            qr[index] = 0;//joints_references[index];
             dqr[index] = 0;
         }
 
@@ -272,42 +270,15 @@ namespace go2_actuator
         if (elapsed_time >= sample_time) // Run every 4ms (250Hz)
         {
             std::lock_guard<std::mutex> lock(this->mutex_actuator);
+            
+            for (auto index{0}; index < 12; index++)
             {
-                if (kp[0] != 0)
-                {
-                    for (auto index{0}; index < 12; index++)
-                    {
-                        // get the joint position
-                        q[index] = joint_state_interface_[0][index].get().get_value();
-                        // get the joint velocity
-                        dq[index] = joint_state_interface_[1][index].get().get_value();
+                auto effort = kp[index] * (qr[index] - q[index]) + kd[index] * (dqr[index] - dq[index]) + tau[index];
 
-                        // compute the error position
-                        q_e[index] = qr[index] - q[index];
-                        dq_e[index] = dqr[index] - dq[index];
-
-                        double tau_ = kp[index] * q_e[index] + kd[index] * dq_e[index];
-
-                        (void)joint_command_interface_[0][index].get().set_value(tau_);
-                    }
-                }
-                // else if (tau[0] != 0)
+                if (std::isfinite(effort))
+                    (void)joint_command_interface_[0][index].get().set_value(effort);
                 else
-                {
-                    for (auto index{0}; index < 12; index++)
-                    {
-                        if (std::isfinite(tau[index]))
-                            (void)joint_command_interface_[0][index].get().set_value(tau[index]);
-                        else
-                            (void)joint_command_interface_[0][index].get().set_value(0);
-                        // (void)joint_command_interface_[0][index].get().set_value(0);
-                        // std::cout << "#####  " << index << "  #####" << tau[index] << std::endl;
-                    }
-                }
-                // else
-                // {
-                //     std::cout << "ERROR: Kp, Kd and Tau are zero" << std::endl;
-                // }
+                    (void)joint_command_interface_[0][index].get().set_value(0.0);
             }
 
             last_update_time_ = time.nanoseconds(); // Reset timer

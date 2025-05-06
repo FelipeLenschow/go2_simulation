@@ -16,32 +16,29 @@ namespace go2_controller
 {
 
     Go2Controller::Go2Controller()
-        : controller_interface::ControllerInterface(),
-          joint_names_({}),
-          model()
+        : controller_interface::ControllerInterface()
+        , joint_names_({})
+        , model()
+        , gravidade(3)
+        , q(12)
+        , dq(12)
+        , kp(12)
+        , kd(12)
+        , tauG(12)
+        , tau(12)
+        , q_e(12)
+        , dq_e(12)
+        , qr(12)
+        , dqr(12)
+        , effort(12)
+        , commanded_effort(12)
     {
-        std::cout << "Name from URDF" << std::endl;
-
         const auto package_share_path = ament_index_cpp::get_package_share_directory("go2_description");
         const auto urdf_path = std::filesystem::path(package_share_path) / "urdf" / "go2.xacro.urdf";
 
         pinocchio::urdf::buildModel(urdf_path, model);
 
         data = std::make_shared<pinocchio::Data>(model);
-
-        gravidade.resize(3);
-        q.resize(12);
-        dq.resize(12);
-        kp.resize(12);
-        kd.resize(12);
-        tau.resize(12);
-        tauG.resize(12);
-        q_e.resize(12);
-        dq_e.resize(12);
-        qr.resize(12);
-        dqr.resize(12);
-        effort.resize(12);
-        commanded_effort.resize(12);
     }
 
     controller_interface::CallbackReturn Go2Controller::on_init()
@@ -139,9 +136,6 @@ namespace go2_controller
                 return CallbackReturn::FAILURE;
             }
         }
-        //         return CallbackReturn::SUCCESS;
-        //     }
-        // }
 
         joint_command_interface_.resize(allowed_command_interface_types_.size());
 
