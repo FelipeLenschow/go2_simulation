@@ -72,7 +72,7 @@ namespace go2_jointcontroller
         for (int i = 0; i < model.nq - 1; i++)
             pinocchio_frames[i] = model.getFrameId(joint_names_sequence[i]);
 
-        control_mode = 1;
+        control_mode = 2;
 
         gravidade[0] = 0;
         gravidade[1] = 0;
@@ -236,14 +236,14 @@ namespace go2_jointcontroller
                     {
                     case 1: // PD only
 
-                        computePD();
+                        // computePD();
                         for (int j = 0; j < 12; j++)
                         {
-                            lowCmd_msg.motor_cmd[j].q = 0;  // qr[j];
-                            lowCmd_msg.motor_cmd[j].dq = 0; // dqr[j];
-                            lowCmd_msg.motor_cmd[j].kp = 0; // kp[j];
-                            lowCmd_msg.motor_cmd[j].kd = 0; // kd[j];
-                            lowCmd_msg.motor_cmd[j].tau = commanded_effort[j];
+                            lowCmd_msg.motor_cmd[j].q = qr[j];
+                            lowCmd_msg.motor_cmd[j].dq = dqr[j];
+                            lowCmd_msg.motor_cmd[j].kp = kp[j];
+                            lowCmd_msg.motor_cmd[j].kd = kd[j];
+                            lowCmd_msg.motor_cmd[j].tau = 0;
                         }
                         break;
 
@@ -294,6 +294,7 @@ namespace go2_jointcontroller
                     }
 
                     // Publish the control message
+                    std::cout<<"hey"<<std::endl;
                     lowCmd_msg.crc = crc32_core((uint32_t *)&lowCmd_msg, (sizeof(lowCmd) >> 2) - 1);
                     joints_cmd_publisher_->publish(lowCmd_msg);
 
@@ -352,41 +353,57 @@ namespace go2_jointcontroller
     //     }
     // }
 
-    void Go2JointController::computeG()
-    {
-        pinocchio::forwardKinematics(model, *data, q); // atualiza valores
-        tauG = Eigen::VectorXd::Zero(12);              // zera torque no início de cada cálculo
+    void Go2JointController::computeG() {
 
-        for (int leg = 0; leg < 4; leg++) // organizando as juntas por perna
-        {
-            int j0 = leg * 3 + 0; // ombro
-            int j1 = leg * 3 + 1; // joelho
-            int j2 = leg * 3 + 2; // tornozelo
-
-            for (int e = 0; e < 3; e++)
-            {
-                int i = leg * 3 + e; // índice do elo (frame) da perna
-
-                // Calcula o jacobiano linear do centro de massa do elo i
+        pinocchio::forwardKinematics(model, *data, q);
+    
+        this->tauG.setZero(); // Corrige escopo da variável e inicializa
+    
+     
+    
+        for (int leg = 0; leg < 4; leg++) {
+    
+            for (int e = 0; e < 3; e++) {
+    
+                int i = leg * 3 + e;
+    
+     
+    
+                // Jacobiano do frame do elo no mundo
+    
                 Eigen::MatrixXd J(6, model.nv);
-                pinocchio::computeFrameJacobian(model, *data, q, pinocchio_frames[i], pinocchio::LOCAL, J); // cálculo do jacobiano
-                Eigen::MatrixXd J_linear = J.topRows(3);                                                    // Parte linear do Jacobiano
-
-                Eigen::Vector3d F_grav = mass[i] * gravidade;                   // Força gravitacional no elo
-                Eigen::VectorXd torque_contrib = J_linear.transpose() * F_grav; // torque do compensador gravitacional daquela junta
-
-                // O torque do elo afeta a si mesmo e todas as juntas anteriores (superiores)
-                tauG[j2] += torque_contrib[j2]; // contribuição dos elos distais
-                tauG[j1] += torque_contrib[j1];
-                tauG[j0] += torque_contrib[j0];
-
-                // std::cout << torque_contrib << std::endl;
-                // std::cout << "--- - - - - -- - - ----  - - - - --  - - - - -- - - - - ------------------------------ " << std::endl;
+    
+                pinocchio::computeFrameJacobian(model, *data, q, pinocchio_frames[i],
+    
+                                               pinocchio::WORLD, J);
+    
+                Eigen::MatrixXd J_linear = J.topRows(3); // Pega parte linear do jacobiano
+    
+     
+    
+                Eigen::Vector3d F_grav = mass[i] * gravidade; // Força peso no elo
+    
+     
+    
+                Eigen::VectorXd torque_contrib_global = J_linear.transpose() * F_grav; // Torque gerado pela gravidade (dim model.nv)
+    
+     
+    
+                // Acumula contribuição APENAS nas 3 juntas da perna atual
+    
+                for (int j = 0; j < 3; ++j) {
+    
+                    this->tauG[leg * 3 + j] += torque_contrib_global[leg * 3 + j];
+    
+                }
+    
             }
-            // std::cout << tauG << std::endl;
-            // std::cout << "--- - - - - -- - - ----  - - - - --  - - - - -- - - - - ------------------------------ " << std::endl;
+    
         }
+    
     }
+    
+     
 
     void Go2JointController::computePD()
     {

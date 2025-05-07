@@ -120,7 +120,7 @@ private:
     float _desPos[12];
     float sequence[sequence_size][12];
 
-    uint32_t mode = 4;
+    uint32_t mode = 2;
 };
 
 int main(int argc, char *argv[])
