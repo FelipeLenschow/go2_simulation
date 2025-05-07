@@ -19,7 +19,7 @@
             <xacro:if value="${(mirror_dae == True) and (front_hind_dae == False)}">
                 <origin rpy="0 0 0" xyz="${-leg_offset_x} ${leg_offset_y} 0"/>
             </xacro:if>
-            <parent link="torso"/>
+            <parent link="base_link"/>
             <child link="${name}_hip"/>
             <axis xyz="1 0 0"/>
             <dynamics damping="${damping}" friction="${friction}"/>
