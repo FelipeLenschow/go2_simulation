@@ -29,10 +29,10 @@ private:
     bool world_odom_published_ = false;
 
     const std::vector<std::string> joint_names_ = {
-        "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
         "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
-        "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint",
-        "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint"};
+        "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
+        "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint",
+        "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint"};
 
     const std::vector<std::string> collision_links_ = {
         "FR_calflower", "FR_calflower1",
