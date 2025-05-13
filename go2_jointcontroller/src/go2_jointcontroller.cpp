@@ -16,6 +16,9 @@
 #include <pinocchio/algorithm/model.hpp>
 #include <pinocchio/algorithm/jacobian.hpp>
 
+constexpr double PosStopF = (2.146E+9f);
+constexpr double VelStopF = (16000.0f);
+
 namespace go2_jointcontroller
 {
 
@@ -72,7 +75,7 @@ namespace go2_jointcontroller
         for (int i = 0; i < model.nq - 1; i++)
             pinocchio_frames[i] = model.getFrameId(joint_names_sequence[i]);
 
-        control_mode = 2;
+        control_mode = 1;
 
         gravidade[0] = 0;
         gravidade[1] = 0;
@@ -215,6 +218,18 @@ namespace go2_jointcontroller
         const rclcpp::Time &time, const rclcpp::Duration & /*period*/)
     {
 
+        // // Poinstion(rad) control, set RL_0 rad
+        // lowCmd_msg.motor_cmd[9].q = 0;   // Taregt angular(rad)
+        // lowCmd_msg.motor_cmd[9].kp = 10; // Poinstion(rad) control kp gain
+        // lowCmd_msg.motor_cmd[9].dq = 0;  // Taregt angular velocity(rad/ss)
+        // lowCmd_msg.motor_cmd[9].kd = 1;  // Poinstion(rad) control kd gain
+        // lowCmd_msg.motor_cmd[9].tau = 0; // Feedforward toque 1N.m
+
+        // get_crc(lowCmd_msg);
+        // // lowCmd_msg.crc = crc32_core((uint32_t *)&lowCmd_msg, (sizeof(lowCmd) >> 2) - 1);
+
+        // joints_cmd_publisher_->publish(lowCmd_msg);
+
         if (last_update_time_ == 0)
         {
             last_update_time_ = time.nanoseconds();
@@ -294,8 +309,9 @@ namespace go2_jointcontroller
                     }
 
                     // Publish the control message
-                    std::cout<<"hey"<<std::endl;
-                    lowCmd_msg.crc = crc32_core((uint32_t *)&lowCmd_msg, (sizeof(lowCmd) >> 2) - 1);
+                    // std::cout<<"hey"<<std::endl;
+                    // lowCmd_msg.crc = crc32_core((uint32_t *)&lowCmd_msg, (sizeof(lowCmd) >> 2) - 1);
+                    get_crc(lowCmd_msg);
                     joints_cmd_publisher_->publish(lowCmd_msg);
 
                     return controller_interface::return_type::OK;
@@ -467,16 +483,15 @@ namespace go2_jointcontroller
 
     uint32_t Go2JointController::crc32_core(uint32_t *ptr, uint32_t len)
     {
-        unsigned int xbit = 0;
-        unsigned int data = 0;
-        unsigned int CRC32 = 0xFFFFFFFF;
-        const unsigned int dwPolynomial = 0x04c11db7;
-
-        for (unsigned int i = 0; i < len; i++)
+        uint32_t xbit = 0;
+        uint32_t data = 0;
+        uint32_t CRC32 = 0xFFFFFFFF;
+        const uint32_t dwPolynomial = 0x04c11db7;
+        for (uint32_t i = 0; i < len; i++)
         {
             xbit = 1 << 31;
             data = ptr[i];
-            for (unsigned int bits = 0; bits < 32; bits++)
+            for (uint32_t bits = 0; bits < 32; bits++)
             {
                 if (CRC32 & 0x80000000)
                 {
@@ -484,19 +499,63 @@ namespace go2_jointcontroller
                     CRC32 ^= dwPolynomial;
                 }
                 else
-                {
                     CRC32 <<= 1;
-                }
-
                 if (data & xbit)
                     CRC32 ^= dwPolynomial;
+    
                 xbit >>= 1;
             }
         }
-
         return CRC32;
     }
+
+
+    void Go2JointController::get_crc(lowCmd& msg)
+    {
+        LowCmd raw{};
+        memcpy(&raw.head[0], &msg.head[0], 2);
+
+        raw.levelFlag=msg.level_flag;
+        raw.frameReserve=msg.frame_reserve;
+
+        memcpy(&raw.SN[0],&msg.sn[0], 8);
+        memcpy(&raw.version[0], &msg.version[0], 8);
+
+        raw.bandWidth=msg.bandwidth;
+
+
+        for(int i = 0; i<20; i++)
+        {
+            raw.motorCmd[i].mode=msg.motor_cmd[i].mode;
+            raw.motorCmd[i].q=msg.motor_cmd[i].q;
+            raw.motorCmd[i].dq=msg.motor_cmd[i].dq;
+            raw.motorCmd[i].tau=msg.motor_cmd[i].tau;
+            raw.motorCmd[i].Kp=msg.motor_cmd[i].kp;
+            raw.motorCmd[i].Kd=msg.motor_cmd[i].kd;
+
+            memcpy(&raw.motorCmd[i].reserve[0], &msg.motor_cmd[i].reserve[0], 12);
+        }
+
+        raw.bms.off=msg.bms_cmd.off;
+        memcpy(&raw.bms.reserve[0],&msg.bms_cmd.reserve[0],  3);
+
+
+        memcpy(&raw.wirelessRemote[0], &msg.wireless_remote[0], 40);
+
+        memcpy(&raw.led[0], &msg.led[0],  12);  // go2
+        memcpy(&raw.fan[0], &msg.fan[0],  2);
+        raw.gpio=msg.gpio;    // go2
+
+        raw.reserve=msg.reserve;
+
+        raw.crc=crc32_core((uint32_t *)&raw, (sizeof(LowCmd)>>2)-1);
+        msg.crc=raw.crc;
+
+        
+    }
 }
+
+
 
 #include <pluginlib/class_list_macros.hpp>
 PLUGINLIB_EXPORT_CLASS(

@@ -112,7 +112,7 @@ def generate_launch_description():
 
     rviz_event_handler = RegisterEventHandler(
         event_handler=OnProcessStart(
-            target_action=go2_remap_node,
+            target_action=go2_remap_cloud_node,
             on_start=[rviz_node],
         )
     )
@@ -120,10 +120,10 @@ def generate_launch_description():
     return LaunchDescription(
         [
             robot_state_pub_node,
-            # controller_manager_event_handler,   
-            # delayed_joint_controller_spawner,
+            controller_manager_event_handler,   
+            delayed_joint_controller_spawner,
             remap_event_handler,
-            # remap_cloud_event_handler,
+            remap_cloud_event_handler,
             rviz_event_handler,
         ]
     )
