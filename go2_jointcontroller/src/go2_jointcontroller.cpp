@@ -64,15 +64,29 @@ namespace go2_jointcontroller
         // Create a set of Pinocchio models and data.
         pinocchio::urdf::buildModel(urdf_path, model);
 
-        for (int i = 1; i <= model.nq; i++)
-            std::cout << model.names[i] << std::endl;
+        // for (int i = 1; i <= model.nq; i++)
+        //     std::cout << model.names[i] << std::endl;
 
         data = std::make_shared<pinocchio::Data>(model);
 
         for (int i = 0; i < model.nq - 1; i++)
             pinocchio_frames[i] = model.getFrameId(joint_names_sequence[i]);
 
-        control_mode = 1;
+        for (const auto &joint_name : desired_order)
+        {
+            auto it = std::find(pinocchio_order.begin(), pinocchio_order.end(), joint_name);
+            if (it != pinocchio_order.end())
+            {
+                int idx = std::distance(pinocchio_order.begin(), it);
+                map_desired_to_pinocchio.push_back(idx);
+            }
+            else
+            {
+                std::cerr << "Joint name not found: " << joint_name << std::endl;
+                map_desired_to_pinocchio.push_back(-1); // erro
+            }
+        }
+        control_mode = 3;
 
         gravidade[0] = 0;
         gravidade[1] = 0;
@@ -82,7 +96,7 @@ namespace go2_jointcontroller
         mass[10] = mass[7] = mass[4] = mass[1] = 1.152;
         mass[11] = mass[8] = mass[5] = mass[2] = 0.154;
 
-        ki[0] = ki[3] = ki[6] = ki[9] = 50;
+        ki[0] = ki[3] = ki[6] = ki[9] = 45;
         ki[1] = ki[4] = ki[7] = ki[10] = 25;
         ki[2] = ki[5] = ki[8] = ki[11] = 0;
     }
@@ -239,18 +253,18 @@ namespace go2_jointcontroller
                         computePD();
                         for (int j = 0; j < 12; j++)
                         {
-                            lowCmd_msg.motor_cmd[j].q = 0;  // qr[j];
-                            lowCmd_msg.motor_cmd[j].dq = 0; // dqr[j];
-                            lowCmd_msg.motor_cmd[j].kp = 0; // kp[j];
-                            lowCmd_msg.motor_cmd[j].kd = 0; // kd[j];
-                            lowCmd_msg.motor_cmd[j].tau = commanded_effort[j];
+                            lowCmd_msg.motor_cmd[j].q = qr[j];
+                            lowCmd_msg.motor_cmd[j].dq = dqr[j];
+                            lowCmd_msg.motor_cmd[j].kp = kp[j];
+                            lowCmd_msg.motor_cmd[j].kd = kd[j];
+                            lowCmd_msg.motor_cmd[j].tau = 0; // commanded_effort[j];
                         }
                         break;
 
                     case 2: // PD + Gravity Compensation
 
                         computePD_COMPG();
-                        computeG();
+                        computeTotalGravityCompensation();
                         for (int j = 0; j < 12; j++)
                         {
                             lowCmd_msg.motor_cmd[j].q = 0;
@@ -277,7 +291,7 @@ namespace go2_jointcontroller
                     case 4: // PID + Gravity Compensation
 
                         computePID_COMPG();
-                        computeG();
+                        computeTotalGravityCompensation();
                         for (int j = 0; j < 12; j++)
                         {
                             lowCmd_msg.motor_cmd[j].q = 0;
@@ -312,80 +326,120 @@ namespace go2_jointcontroller
         return controller_interface::return_type::OK;
     }
 
-    // void Go2JointController::computeG()
-    // {
-    //     // Atualiza a cinemática direta
-    //     pinocchio::forwardKinematics(model, *data, q);
-
-    //     // Zera o vetor de torques para garantir acúmulo correto
-    //     tauG = Eigen::VectorXd::Zero(model.nv);
-
-    //     // Para cada perna (4 no total)
-    //     for (int leg = 0; leg < 4; ++leg)
-    //     {
-    //         // Para cada elo da perna (ombro, coxa, panturrilha)
-    //         for (int elo = 0; elo < 3; ++elo)
-    //         {
-    //             int frame_id = leg * 3 + elo; // índice do frame do elo
-
-    //             // Jacobiano do frame no mundo
-    //             Eigen::MatrixXd J(6, model.nv);
-    //             pinocchio::computeFrameJacobian(model, *data, q, pinocchio_frames[frame_id], pinocchio::WORLD, J);
-
-    //             // Parte linear do Jacobiano
-    //             Eigen::MatrixXd J_linear = J.topRows(3);
-
-    //             // Força gravitacional aplicada ao centro de massa do elo
-    //             Eigen::Vector3d F_grav = mass[frame_id] * gravidade;
-
-    //             // Torque resultante nas juntas causado por essa força
-    //             Eigen::VectorXd tau_contrib = J_linear.transpose() * F_grav;
-
-    //             // Acumula o torque em cada junta
-    //             for (int j = 0; j < model.nv; ++j)
-    //             {
-    //                 tauG[j] += tau_contrib[j];
-    //                 // std::cout << tauG << std::endl;
-    //                 // std::cout << "--- - - - - -- - - ----  - - - - --  - - - - -- - - - - ------------------------------ " << std::endl;
-    //             }
-    //         }
-    //     }
-    // }
-
-    void Go2JointController::computeG()
+    // Função de reordenação de entrada
+    Eigen::VectorXd Go2JointController::reorder_to_pinocchio(const Eigen::VectorXd &vec_desired)
     {
-        pinocchio::forwardKinematics(model, *data, q); // atualiza valores
-        tauG = Eigen::VectorXd::Zero(12);              // zera torque no início de cada cálculo
-
-        for (int leg = 0; leg < 4; leg++) // organizando as juntas por perna
+        Eigen::VectorXd vec_pinocchio(vec_desired.size());
+        for (int i = 0; i < vec_desired.size(); ++i)
         {
-            int j0 = leg * 3 + 0; // ombro
-            int j1 = leg * 3 + 1; // joelho
-            int j2 = leg * 3 + 2; // tornozelo
+            vec_pinocchio[map_desired_to_pinocchio[i]] = vec_desired[i];
+        }
+        return vec_pinocchio;
+    }
+
+    // Função de reordenação de saída
+    Eigen::VectorXd Go2JointController::reorder_to_desired(const Eigen::VectorXd &vec_pinocchio)
+    {
+        Eigen::VectorXd vec_desired(vec_pinocchio.size());
+        for (int i = 0; i < vec_pinocchio.size(); ++i)
+        {
+            vec_desired[i] = vec_pinocchio[map_desired_to_pinocchio[i]];
+        }
+        return vec_desired;
+    }
+    void Go2JointController::computeG12()
+
+    {
+
+        // Supondo que qr, v, a estão na ordem desejada (FL, FR, RL, RR)
+
+        Eigen::VectorXd q_pinocchio = reorder_to_pinocchio(qr);
+
+        Eigen::VectorXd v_pinocchio = reorder_to_pinocchio(v);
+
+        Eigen::VectorXd a_pinocchio = reorder_to_pinocchio(a);
+
+        // Calcula torques na ordem do Pinocchio
+
+        Eigen::VectorXd tau_pinocchio = pinocchio::rnea(model, *data, q_pinocchio, v_pinocchio, a_pinocchio);
+
+        // Reordena para sua ordem desejada
+
+        Eigen::VectorXd tau_temp = reorder_to_desired(tau_pinocchio);
+
+        // Preenche apenas os índices 1, 2, 4, 5, 7, 8, 10 e 11
+
+        std::vector<int> indices_to_fill = {1, 2, 4, 5, 7, 8, 10, 11};
+
+        for (int i : indices_to_fill)
+        {
+
+            if (i >= 0 && i < tauG.size() && i < tau_temp.size())
+            {
+
+                tauG[i] = tau_temp[i];
+            }
+        }
+    }
+
+    void Go2JointController::computeG0()
+    {
+
+        // Atualiza cinemática direta para garantir que frames estejam atualizados
+
+        pinocchio::forwardKinematics(model, *data, q);
+
+        for (int leg = 0; leg < 4; leg++)
+        {
+
+            int shoulder_index = leg * 3 + 0; // Índice da junta de "ombro" (0, 3, 6, 9)
+
+            Eigen::VectorXd torque_total = Eigen::VectorXd::Zero(model.nv);
 
             for (int e = 0; e < 3; e++)
             {
-                int i = leg * 3 + e; // índice do elo (frame) da perna
 
-                // Calcula o jacobiano linear do centro de massa do elo i
+                int i = leg * 3 + e; // Índice global do elo
+
+                // Calcula jacobiano do frame do elo no mundo
+
                 Eigen::MatrixXd J(6, model.nv);
-                pinocchio::computeFrameJacobian(model, *data, q, pinocchio_frames[i], pinocchio::LOCAL, J); // cálculo do jacobiano
-                Eigen::MatrixXd J_linear = J.topRows(3);                                                    // Parte linear do Jacobiano
 
-                Eigen::Vector3d F_grav = mass[i] * gravidade;                   // Força gravitacional no elo
-                Eigen::VectorXd torque_contrib = J_linear.transpose() * F_grav; // torque do compensador gravitacional daquela junta
+                pinocchio::computeFrameJacobian(model, *data, qr, pinocchio_frames[i], pinocchio::WORLD, J);
 
-                // O torque do elo afeta a si mesmo e todas as juntas anteriores (superiores)
-                tauG[j2] += torque_contrib[j2]; // contribuição dos elos distais
-                tauG[j1] += torque_contrib[j1];
-                tauG[j0] += torque_contrib[j0];
+                // Parte linear do jacobiano
 
-                // std::cout << torque_contrib << std::endl;
-                // std::cout << "--- - - - - -- - - ----  - - - - --  - - - - -- - - - - ------------------------------ " << std::endl;
+                Eigen::MatrixXd J_linear = J.topRows(3);
+
+                // Força gravitacional no centro de massa
+
+                Eigen::Vector3d F_grav = mass[i] * gravidade;
+
+                // Torque gerado pela gravidade
+
+                Eigen::VectorXd torque_contrib_global = J_linear.transpose() * F_grav;
+
+                // Acumula toda a contribuição no vetor total
+
+                torque_total += torque_contrib_global;
             }
-            // std::cout << tauG << std::endl;
-            // std::cout << "--- - - - - -- - - ----  - - - - --  - - - - -- - - - - ------------------------------ " << std::endl;
+
+            // Após somar as contribuições de todos os elos da perna, aplica apenas na junta do ombro
+
+            tauG[shoulder_index] += torque_total[shoulder_index];
         }
+    }
+
+    void Go2JointController::computeTotalGravityCompensation()
+    {
+        // Zera todo o vetor de torques antes de preencher
+        tauG = Eigen::VectorXd::Zero(12);
+
+        // Preenche os torques apenas nos índices 0, 3, 6 e 9
+        computeG0();
+
+        // Preenche os torques apenas nos índices 1, 2, 4, 5, 7, 8, 10 e 11
+        computeG12();
     }
 
     void Go2JointController::computePD()
@@ -396,6 +450,14 @@ namespace go2_jointcontroller
             dq_e[index] = dqr[index] - dq[index];
             commanded_effort[index] = 50 * q_e[index] + 0.7 * dq_e[index];
         }
+        commanded_effort[0] = commanded_effort[0] + 25 * q_e[0];
+        commanded_effort[1] = commanded_effort[1] + 25 * q_e[1];
+        commanded_effort[3] = commanded_effort[3] + 25 * q_e[3];
+        commanded_effort[4] = commanded_effort[4] + 25 * dq_e[4];
+        commanded_effort[6] = commanded_effort[6] + 25 * dq_e[6];
+        commanded_effort[7] = commanded_effort[7] + 25 * dq_e[7];
+        commanded_effort[9] = commanded_effort[9] + 25 * dq_e[9];
+        commanded_effort[10] = commanded_effort[10] + 25 * dq_e[10];
     }
 
     void Go2JointController::computePD_COMPG()
@@ -404,18 +466,17 @@ namespace go2_jointcontroller
         {
             q_e[index] = qr[index] - q[index];
             dq_e[index] = dqr[index] - dq[index];
-            commanded_effort[index] = 33 * q_e[index] + 0.5 * dq_e[index];
+            commanded_effort[index] = 25 * q_e[index] + 0.4 * dq_e[index];
         }
-        commanded_effort[0] = commanded_effort[0] + 0.3 * dq_e[0];
-        commanded_effort[1] = commanded_effort[1] + 0.3 * dq_e[1];
-        commanded_effort[3] = commanded_effort[3] + 0.3 * dq_e[3];
-        commanded_effort[4] = commanded_effort[4] + 0.3 * dq_e[4];
-        commanded_effort[6] = commanded_effort[6] + 0.3 * dq_e[6];
-        commanded_effort[7] = commanded_effort[7] + 0.3 * dq_e[7];
-        commanded_effort[9] = commanded_effort[9] + 0.3 * dq_e[9];
-        commanded_effort[10] = commanded_effort[10] + 0.3 * dq_e[10];
+        commanded_effort[0] = commanded_effort[0] + 35 * q_e[0] + 0.3 * dq_e[0];
+        commanded_effort[1] = commanded_effort[1] + 30 * q_e[1] + 0.3 * dq_e[1];
+        commanded_effort[3] = commanded_effort[3] + 25 * q_e[3] + 0.3 * dq_e[3];
+        commanded_effort[4] = commanded_effort[4] + 30 * q_e[4] + 0.3 * dq_e[4];
+        commanded_effort[6] = commanded_effort[6] + 25 * q_e[6] + 0.3 * dq_e[6];
+        commanded_effort[7] = commanded_effort[7] + 30 * q_e[7] + 0.3 * dq_e[7];
+        commanded_effort[9] = commanded_effort[9] + 25 * q_e[9] + 0.3 * dq_e[9];
+        commanded_effort[10] = commanded_effort[10] + 30 * q_e[10] + 0.3 * dq_e[10];
     }
-
     void Go2JointController::computePID()
     {
         for (auto index{0}; index < 12; index++)
@@ -426,6 +487,10 @@ namespace go2_jointcontroller
 
             commanded_effort[index] = 50 * q_e[index] + 0.5 * dq_e[index] + ki[index] * qi_e[index];
         }
+        commanded_effort[0] = commanded_effort[0] + 15 * q_e[0];
+        commanded_effort[3] = commanded_effort[3] + 15 * q_e[3];
+        commanded_effort[6] = commanded_effort[6] + 15 * q_e[6];
+        commanded_effort[9] = commanded_effort[9] + 15 * q_e[9];
     }
 
     void Go2JointController::computePID_COMPG()
@@ -436,16 +501,16 @@ namespace go2_jointcontroller
             dq_e[index] = dqr[index] - dq[index];
             qi_e[index] += (q_e[index] / 1000);
 
-            commanded_effort[index] = 25 * q_e[index] + 0.6 * dq_e[index];
+            commanded_effort[index] = 30 * q_e[index] + 0.6 * dq_e[index];
         }
-        commanded_effort[0] = commanded_effort[0] + 0.5 * dq_e[0] + 25 * qi_e[0];
-        commanded_effort[1] = commanded_effort[1] + 0.5 * dq_e[0] + 12.5 * qi_e[1];
-        commanded_effort[3] = commanded_effort[3] + 0.5 * dq_e[3] + 25 * qi_e[3];
-        commanded_effort[4] = commanded_effort[4] + 0.5 * dq_e[4] + 12.5 * qi_e[4];
-        commanded_effort[6] = commanded_effort[6] + 0.5 * dq_e[6] + 25 * qi_e[6];
-        commanded_effort[7] = commanded_effort[7] + 0.5 * dq_e[7] + 12.5 * qi_e[7];
-        commanded_effort[9] = commanded_effort[9] + 0.5 * dq_e[9] + 25 * qi_e[9];
-        commanded_effort[10] = commanded_effort[10] + 0.5 * dq_e[10] + 12.5 * qi_e[10];
+        commanded_effort[0] = commanded_effort[0] + 35 * q_e[0] + 30 * qi_e[0];
+        commanded_effort[1] = commanded_effort[1] + 30 * q_e[1] + 20 * qi_e[1];
+        commanded_effort[3] = commanded_effort[3] + 35 * q_e[3] + 30 * qi_e[3];
+        commanded_effort[4] = commanded_effort[4] + 35 * q_e[4] + 20 * qi_e[4];
+        commanded_effort[6] = commanded_effort[6] + 30 * q_e[6] + 20 * qi_e[6];
+        commanded_effort[7] = commanded_effort[7] + 35 * q_e[7] + 20 * qi_e[7];
+        commanded_effort[9] = commanded_effort[9] + 30 * q_e[9] + 30 * qi_e[9];
+        commanded_effort[10] = commanded_effort[10] + 35 * q_e[10] + 20 * qi_e[10];
     }
 
     uint32_t Go2JointController::crc32_core(uint32_t *ptr, uint32_t len)

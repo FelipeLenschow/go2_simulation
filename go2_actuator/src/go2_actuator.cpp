@@ -260,58 +260,58 @@ namespace go2_actuator
     controller_interface::return_type Go2Actuator::update(
         const rclcpp::Time &time, const rclcpp::Duration & /*period*/)
     {
-        if (last_update_time_ == 0)
-        {
-            last_update_time_ = time.nanoseconds();
-        }
+        // if (last_update_time_ == 0)
+        // {
+        //     last_update_time_ = time.nanoseconds();
+        // }
 
-        // Compute time difference since last update
-        elapsed_time = (time.nanoseconds() - last_update_time_) * 1e-9; // Convert ns to seconds
+        // // Compute time difference since last update
+        // elapsed_time = (time.nanoseconds() - last_update_time_) * 1e-9; // Convert ns to seconds
 
-        // const auto logger = get_node()->get_logger();
-        if (elapsed_time >= sample_time) // Run every 4ms (250Hz)
-        {
-            std::lock_guard<std::mutex> lock(this->mutex_actuator);
-            {
-                if (kp[0] != 0)
-                {
-                    for (auto index{0}; index < 12; index++)
-                    {
-                        // get the joint position
-                        q[index] = joint_state_interface_[0][index].get().get_value();
-                        // get the joint velocity
-                        dq[index] = joint_state_interface_[1][index].get().get_value();
+        // // const auto logger = get_node()->get_logger();
+        // if (elapsed_time >= sample_time) // Run every 4ms (250Hz)
+        // {
+        //     std::lock_guard<std::mutex> lock(this->mutex_actuator);
+        //     {
+        //         if (kp[0] != 0)
+        //         {
+        //             for (auto index{0}; index < 12; index++)
+        //             {
+        //                 // get the joint position
+        //                 q[index] = joint_state_interface_[0][index].get().get_value();
+        //                 // get the joint velocity
+        //                 dq[index] = joint_state_interface_[1][index].get().get_value();
 
-                        // compute the error position
-                        q_e[index] = qr[index] - q[index];
-                        dq_e[index] = dqr[index] - dq[index];
+        //                 // compute the error position
+        //                 q_e[index] = qr[index] - q[index];
+        //                 dq_e[index] = dqr[index] - dq[index];
 
-                        double tau_ = kp[index] * q_e[index] + kd[index] * dq_e[index];
+        //                 double tau_ = kp[index] * q_e[index] + kd[index] * dq_e[index];
 
-                        (void)joint_command_interface_[0][index].get().set_value(tau_);
-                    }
-                }
-                // else if (tau[0] != 0)
-                else
-                {
-                    for (auto index{0}; index < 12; index++)
-                    {
-                        if (std::isfinite(tau[index]))
-                            (void)joint_command_interface_[0][index].get().set_value(tau[index]);
-                        else
-                            (void)joint_command_interface_[0][index].get().set_value(0);
-                        // (void)joint_command_interface_[0][index].get().set_value(0);
-                        // std::cout << "#####  " << index << "  #####" << tau[index] << std::endl;
-                    }
-                }
-                // else
-                // {
-                //     std::cout << "ERROR: Kp, Kd and Tau are zero" << std::endl;
-                // }
-            }
+        //                 (void)joint_command_interface_[0][index].get().set_value(tau_);
+        //             }
+        //         }
+        //         // else if (tau[0] != 0)
+        //         else
+        //         {
+        //             for (auto index{0}; index < 12; index++)
+        //             {
+        //                 if (std::isfinite(tau[index]))
+        //                     (void)joint_command_interface_[0][index].get().set_value(tau[index]);
+        //                 else
+        //                     (void)joint_command_interface_[0][index].get().set_value(0);
+        //                 // (void)joint_command_interface_[0][index].get().set_value(0);
+        //                 // std::cout << "#####  " << index << "  #####" << tau[index] << std::endl;
+        //             }
+        //         }
+        //         // else
+        //         // {
+        //         //     std::cout << "ERROR: Kp, Kd and Tau are zero" << std::endl;
+        //         // }
+        //     }
 
-            last_update_time_ = time.nanoseconds(); // Reset timer
-        }
+        //     last_update_time_ = time.nanoseconds(); // Reset timer
+        // }
         return controller_interface::return_type::OK;
     }
 
