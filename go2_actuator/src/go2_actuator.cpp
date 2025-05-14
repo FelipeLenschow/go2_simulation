@@ -258,13 +258,11 @@ namespace go2_actuator
     controller_interface::return_type Go2Actuator::update(
         const rclcpp::Time &time, const rclcpp::Duration & /*period*/)
     {
-        // if (last_update_time_ == 0)
-        // {
-        //     last_update_time_ = time.nanoseconds();
-        // }
+        if (last_update_time_ == 0)
+            last_update_time_ = time.nanoseconds();
 
-        // // Compute time difference since last update
-        // elapsed_time = (time.nanoseconds() - last_update_time_) * 1e-9; // Convert ns to seconds
+        // Compute time difference since last update
+        elapsed_time = (time.nanoseconds() - last_update_time_) * 1e-9; // Convert ns to seconds
 
         // const auto logger = get_node()->get_logger();
         if (elapsed_time >= sample_time) // Run every 4ms (250Hz)
@@ -281,8 +279,8 @@ namespace go2_actuator
                     (void)joint_command_interface_[0][index].get().set_value(0.0);
             }
 
-        //     last_update_time_ = time.nanoseconds(); // Reset timer
-        // }
+            last_update_time_ = time.nanoseconds(); // Reset timer
+        }
         return controller_interface::return_type::OK;
     }
 
