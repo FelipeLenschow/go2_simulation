@@ -82,8 +82,8 @@ namespace go2_jointcontroller
         Eigen::VectorXd gravidade;
         Eigen::VectorXd q;
         Eigen::VectorXd dq;
-        Eigen::VectorXd kp;
-        Eigen::VectorXd kd;
+        std::vector<double> kp;
+        std::vector<double> kd;
         Eigen::VectorXd ki;
         Eigen::VectorXd tau;
         Eigen::VectorXd tauG;

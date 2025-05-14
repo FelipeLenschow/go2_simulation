@@ -1,7 +1,0 @@
-<library path="go2_controller">
-  <class name="go2_controller/Go2JointController" type="go2_jointcontroller::Go2JointController" base_class_type="controller_interface::ControllerInterface">
-  <description>
-    The differential drive controller transforms linear and angular velocity messages into signals for each wheel(s) for a differential drive robot.
-  </description>
-  </class>
-</library>

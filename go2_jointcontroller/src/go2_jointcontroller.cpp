@@ -92,8 +92,8 @@ namespace go2_jointcontroller
         try
         {
             auto_declare<std::vector<std::string>>("joints", joint_names_);
-            // auto_declare<double>("gain.Kp", 60.0);
-            // auto_declare<double>("gain.Kd", 5.0);
+            auto_declare<std::vector<double>>("gain.PD.Kp", kp);
+            auto_declare<std::vector<double>>("gain.PD.Kd", kd);
             auto_declare<double>("up_rate", 200.0);
         }
         catch (const std::exception &e)
