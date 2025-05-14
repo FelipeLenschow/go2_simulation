@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot name="go2" xmlns:xacro="http://ros.org/wiki/xacro">
 
-  <xacro:property name="simulation" default="True"/>
+  <xacro:property name="simulation" default="False"/>
   <xacro:property name="fixed_base" default="False"/>   
   <xacro:arg name="DEBUG" default="false"/>
       
@@ -9,14 +9,14 @@
   <xacro:include filename="$(find go2_description)/urdf/materials.xacro"/>
   <xacro:include filename="$(find go2_description)/urdf/leg.xacro"/>
 
-     <xacro:if value="$(arg DEBUG)">
+     <!-- <xacro:if value="$(arg DEBUG)">
             <link name="world"/>
             <joint name="base_static_joint" type="fixed">
                 <origin rpy="0 0 0" xyz="0 0 0"/>
                 <parent link="world"/>
                 <child link="base"/>
             </joint>
-        </xacro:if> 
+        </xacro:if>  -->
 
   <!-- Include the body (Torso) -->
 

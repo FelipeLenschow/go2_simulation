@@ -17,9 +17,13 @@ public:
         // publisher_ = this->create_publisher<lowCmd>("/go2_actuator/LowCommands", 1);
 
         // Inicializa posições
-        float targetPos1[12] = {0.2, 1.50, -2.65, 0.2, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
-        float targetPos2[12] = {0.1, 1.30, -1.36, 0.2, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
-        float startPos[12] = {0.0, 1.36, -2.00, 0.2, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
+        // float targetPos1[12] = {0.0, 1.50, -2.65, 0.2, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
+        // float targetPos2[12] = {0.1, 1.30, -1.36, 0.2, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
+        // float startPos[12] = {0.0, 1.36, -2.00, 0.2, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
+
+        float targetPos1[12] = {0.0, 1.50, -2.65, 0.0, 1.50, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
+        float targetPos2[12] = {0.1, 1.30, -1.36, 0.1, 1.30, -1.36, -0.2, 1.36, -2.00, 0.2, 1.36, -2.65};
+        float startPos[12] = {0.0, 1.36, -2.00, 0.0, 1.36, -2.00, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
 
         std::copy(std::begin(targetPos1), std::end(targetPos1), sequence[0]);
         std::copy(std::begin(targetPos2), std::end(targetPos2), sequence[1]);
@@ -120,7 +124,7 @@ private:
     float _desPos[12];
     float sequence[sequence_size][12];
 
-    uint32_t mode = 4;
+    uint32_t mode = 2;
 };
 
 int main(int argc, char *argv[])

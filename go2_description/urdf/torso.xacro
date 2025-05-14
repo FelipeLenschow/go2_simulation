@@ -5,51 +5,49 @@
  
     <link name="world" /> 
 
-      <joint name="fixed" type="fixed">
-        <parent link="world"/>
-        <child link="base"/>
-        <origin xyz="0 0 1"/>
-      </joint> 
+    <link name="odom"/>
 
-    <!-- World frame -->
-        <link name="base">
-            <visual>
-                <origin rpy="0 0 0" xyz="0 0 0"/>
-                <geometry>
-                    <box size="0.001 0.001 0.001"/>
-                </geometry>
-            </visual>
-        </link>
+    <joint name="world_to_odom" type="fixed">
+      <parent link="world"/>
+      <child link="odom"/>
+    </joint>
 
-        <joint name="floating_base" type="fixed">
-            <origin rpy="0 0 0" xyz="0 0 0"/>
-            <parent link="base"/>
-            <child link="torso"/>
-        </joint>
+    <joint name="odom_to_base" type="fixed">
+      <parent link="odom"/>
+      <child link="base_link"/>
+    </joint> 
 
-        <link name="torso">
-            <visual>
-                <origin rpy="0 0 0" xyz="0 0 0"/>
-                <geometry>
-                    <mesh filename="file://$(find go2_description)/dae/base.dae"/> 
-                </geometry>
-                <!-- <material name="orange"/> -->
-            </visual>
-            <collision>
-                <origin rpy="0 0 0" xyz="0 0 0"/>
-                <geometry>
-                    <box size="${trunk_length} ${trunk_width} ${trunk_height}"/>
-                </geometry>
-            </collision>
-            <inertial>
-                <origin rpy="0 0 0" xyz="${trunk_com_x} ${trunk_com_y} ${trunk_com_z}"/>
-                <mass value="${trunk_mass}"/>
-                <inertia
-                    ixx="${trunk_ixx}" ixy="${trunk_ixy}" ixz="${trunk_ixz}"
-                    iyy="${trunk_iyy}" iyz="${trunk_iyz}"
-                    izz="${trunk_izz}"/>  
-            </inertial>
+    <link name="base_link">
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="file://$(find go2_description)/dae/base.dae"/> 
+        </geometry>
+        <!-- <material name="orange"/> -->
+      </visual>
+      <collision>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <box size="${trunk_length} ${trunk_width} ${trunk_height}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <origin rpy="0 0 0" xyz="${trunk_com_x} ${trunk_com_y} ${trunk_com_z}"/>
+        <mass value="${trunk_mass}"/>
+        <inertia
+          ixx="${trunk_ixx}" ixy="${trunk_ixy}" ixz="${trunk_ixz}"
+          iyy="${trunk_iyy}" iyz="${trunk_iyz}"
+          izz="${trunk_izz}"/>  
+        </inertial>
     </link>
+
+    <joint name="base_footprint_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="base_footprint"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+    
+    <link name="base_footprint"/>
     <!-- ====================== HEAD UPPER ====================== -->
     <link name="Head_upper">
       <inertial>
@@ -67,7 +65,7 @@
     </link>
 
     <joint name="Head_upper_joint" type="fixed" dont_collapse="true">
-      <parent link="torso"/>
+      <parent link="base_link"/>
       <child link="Head_upper"/>
       <origin xyz="0.285 0 0.01" rpy="0 0 0"/>
     </joint>

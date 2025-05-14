@@ -63,15 +63,74 @@ namespace go2_jointcontroller
 
         void computeG();
 
+        void computeG12();
+
+        void computeG0();
+
         void computePD();
 
         void computePD_COMPG();
+
+        void computeTotalGravityCompensation();
 
         void computePID();
 
         void computePID_COMPG();
 
+        void computeTauG();
+
+        std::vector<int> map_desired_to_pinocchio;
+
+        // std::vector<int> map_desired_to_pinocchio(const std::vector<std::string> &desired_order,
+        //                                           const std::vector<std::string> &pinocchio_order);
+
+        // Reordena um vetor da ordem desejada para a ordem do Pinocchio
+        Eigen::VectorXd reorder_to_pinocchio(const Eigen::VectorXd &vec_desired);
+
+        // Reordena um vetor da ordem do Pinocchio para a ordem desejada
+        Eigen::VectorXd reorder_to_desired(const Eigen::VectorXd &vec_pinocchio);
+
         uint32_t crc32_core(uint32_t *ptr, uint32_t len);
+        void get_crc(lowCmd& msg);
+
+        typedef struct
+        {
+            uint8_t off; // off 0xA5
+            std::array<uint8_t, 3> reserve;
+        } BmsCmd;
+
+
+
+        typedef struct
+        {
+            uint8_t mode; // desired working mode
+            float q;	  // desired angle (unit: radian)
+            float dq;	  // desired velocity (unit: radian/second)
+            float tau;	  // desired output torque (unit: N.m)
+            float Kp;	  // desired position stiffness (unit: N.m/rad )
+            float Kd;	  // desired velocity stiffness (unit: N.m/(rad/s) )
+            std::array<uint32_t, 3> reserve;
+        } MotorCmd; // motor control
+
+        typedef struct
+        {
+            std::array<uint8_t, 2> head;
+            uint8_t levelFlag;
+            uint8_t frameReserve;
+                
+            std::array<uint32_t, 2> SN;
+            std::array<uint32_t, 2> version;
+            uint16_t bandWidth;
+            std::array<MotorCmd, 20> motorCmd;
+            BmsCmd bms;
+            std::array<uint8_t, 40> wirelessRemote;
+            std::array<uint8_t, 12> led;
+            std::array<uint8_t, 2> fan;
+            uint8_t gpio;
+            uint32_t reserve;
+            
+            uint32_t crc;
+        } LowCmd; 
 
     protected:
         std::vector<std::string> joint_names_;
@@ -87,6 +146,11 @@ namespace go2_jointcontroller
         Eigen::VectorXd ki;
         Eigen::VectorXd tau;
         Eigen::VectorXd tauG;
+        Eigen::VectorXd tauG_total;
+        Eigen::VectorXd tauG_local;
+        Eigen::VectorXd tau_pinocchio;
+        Eigen::VectorXd torque_contrib;
+
         Eigen::VectorXd tau_;
         Eigen::VectorXd q_e;
         Eigen::VectorXd qi_e;
@@ -104,6 +168,12 @@ namespace go2_jointcontroller
         Eigen::VectorXd tau_contrib;
         Eigen::Vector3d F_grav;
 
+        // Eigen::VectorXd reorder_to_pinocchio; /////////////////////////////////////
+        // Eigen::VectorXd reorder_to_desired;
+        Eigen::VectorXd q_pinocchio;
+        Eigen::VectorXd v_pinocchio;
+        Eigen::VectorXd a_pinocchio;
+
         lowCmd lowCmd_msg;
 
         rclcpp::Publisher<lowCmd>::SharedPtr joints_cmd_publisher_;
@@ -111,7 +181,7 @@ namespace go2_jointcontroller
         rclcpp::Subscription<lowCmd>::SharedPtr controller_reference_subscriber_;
         rclcpp::Subscription<lowStates>::SharedPtr lowstate_subscriber_;
 
-        uint32_t control_mode = 0;
+        uint32_t control_mode = 2;
 
         std::mutex mutex_controller;
 
@@ -119,13 +189,26 @@ namespace go2_jointcontroller
         double elapsed_time = 0;
         double last_update_time_ = 0;
 
-        const std::vector<std::string> joint_names_sequence = {
+        //////////////////////////////////////////////////////////
+        const std::vector<std::string> desired_order = {
             "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
             "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
             "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint",
             "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint"};
 
+        const std::vector<std::string> pinocchio_order = {
+            "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
+            "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
+            "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint",
+            "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint"};
+
         std::vector<pinocchio::FrameIndex> pinocchio_frames;
+
+        const std::vector<std::string> joint_names_sequence = {
+            "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
+            "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
+            "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint",
+            "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint"};
     };
 
 }
