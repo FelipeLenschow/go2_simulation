@@ -1,29 +1,18 @@
-<?xml version="1.0"?>
 <robot name="go2" xmlns:xacro="http://ros.org/wiki/xacro">
 
-  <xacro:property name="simulation" default="False"/>
-  <xacro:property name="fixed_base" default="False"/>   
-  <xacro:arg name="DEBUG" default="false"/>
-      
+  <!-- Declare arguments at top -->
+  <xacro:arg name="simulation" default="false"/>
+  <xacro:arg name="fixed_base" default="false"/>
+
+  <!-- Include xacro files -->
   <xacro:include filename="$(find go2_description)/urdf/const.xacro"/>
   <xacro:include filename="$(find go2_description)/urdf/materials.xacro"/>
   <xacro:include filename="$(find go2_description)/urdf/leg.xacro"/>
 
-     <!-- <xacro:if value="$(arg DEBUG)">
-            <link name="world"/>
-            <joint name="base_static_joint" type="fixed">
-                <origin rpy="0 0 0" xyz="0 0 0"/>
-                <parent link="world"/>
-                <child link="base"/>
-            </joint>
-        </xacro:if>  -->
-
   <!-- Include the body (Torso) -->
-
   <xacro:include filename="$(find go2_description)/urdf/torso.xacro"/>
-
-  <xacro:torso simulation="${simulation}" fixed_base="${fixed_base}"/>
-  
+  <!-- Call the torso -->
+  <xacro:torso simulation="$(arg simulation)" fixed_base="$(arg fixed_base)"/>
 
   <!-- Instantiate the four legs -->
   
@@ -41,9 +30,10 @@
   <!-- Include ROS 2 Control System -->
   <xacro:include filename="$(find go2_description)/urdf/ros2_control.xacro"/>
 
- <xacro:if value="${simulation}">
+ <xacro:if value="$(arg simulation)">
   <xacro:include filename="$(find go2_description)/gz/gz.xacro"/>
   <xacro:gz_simulation/>
  </xacro:if> 
 
 </robot>
+

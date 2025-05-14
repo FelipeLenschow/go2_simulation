@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
-
+  
   <!-- Define effort limits for each joint type -->
   <xacro:property name="effort_limit_hip" value="23.7"/>
   <xacro:property name="effort_limit_thigh" value="23.7"/>
@@ -48,13 +48,13 @@
   </xacro:macro>
 
   <!-- Conditional Execution -->
-  <xacro:if value="${simulation}">
+  <xacro:if value="$(arg simulation)">
     <xacro:ros2_control_config 
       system_name="GazeboSimSystem" 
       plugin_name="gz_ros2_control/GazeboSimSystem"/>
   </xacro:if>
   
-  <xacro:unless value="${simulation}">
+  <xacro:unless value="$(arg simulation)">
     <xacro:ros2_control_config 
       system_name="MockHardwareSystem" 
       plugin_name="mock_components/GenericSystem"/>

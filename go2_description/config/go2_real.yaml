@@ -9,30 +9,6 @@ controller_manager:
       type: go2_jointcontroller/Go2JointController
 
 
-go2_lowstates:
-  ros__parameters:
-    joints:
-     
-      - FL_hip_joint
-      - FL_thigh_joint
-      - FL_calf_joint
-      - FR_hip_joint
-      - FR_thigh_joint
-      - FR_calf_joint
-      - RL_hip_joint
-      - RL_thigh_joint
-      - RL_calf_joint
-      - RR_hip_joint
-      - RR_thigh_joint
-      - RR_calf_joint
-
-
-    state_interfaces:
-      - position
-      - velocity
-
-    up_rate: 500.0
-
 go2_jointcontroller:
   ros__parameters:
     joints:
