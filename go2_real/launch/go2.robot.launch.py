@@ -70,23 +70,6 @@ def generate_launch_description():
         output="screen",
     )
 
-    # Define RViz Node
-    rviz_config_path = PathJoinSubstitution(
-        [FindPackageShare("go2_description"), "rviz", "go2.rviz"]
-    )
-
-    rviz_node = Node(
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        output="log",
-        arguments=["-d", rviz_config_path],
-        parameters=[{
-            'use_sim_time': False,  # If using simulation time
-            'tf_buffer_duration': 30.0  # Increase TF buffer
-        }]
-    )
-
     # Event handlers to ensure correct order of node execution
     controller_manager_event_handler =  RegisterEventHandler(
         event_handler=OnProcessStart(
@@ -110,13 +93,6 @@ def generate_launch_description():
         )
     )
 
-    rviz_event_handler = RegisterEventHandler(
-        event_handler=OnProcessStart(
-            target_action=go2_remap_cloud_node,
-            on_start=[rviz_node],
-        )
-    )
-
     return LaunchDescription(
         [
             robot_state_pub_node,
@@ -124,6 +100,5 @@ def generate_launch_description():
             delayed_joint_controller_spawner,
             remap_event_handler,
             remap_cloud_event_handler,
-            # rviz_event_handler,
         ]
     )
