@@ -119,11 +119,11 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
-            # robot_state_pub_node,
-            # controller_manager_event_handler,   
-            # delayed_joint_controller_spawner,
-            # remap_event_handler,
-            # remap_cloud_event_handler,
-            rviz_event_handler,
+            robot_state_pub_node,
+            controller_manager_event_handler,   
+            delayed_joint_controller_spawner,
+            remap_event_handler,
+            remap_cloud_event_handler,
+            # rviz_event_handler,
         ]
     )
