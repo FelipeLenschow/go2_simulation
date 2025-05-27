@@ -141,9 +141,14 @@ namespace go2_jointcontroller
         Eigen::VectorXd dq;
         std::vector<double> pd_kp;
         std::vector<double> pd_kd;
+        std::vector<double> pdg_kp;
+        std::vector<double> pdg_kd;
         std::vector<double> pid_kp;
         std::vector<double> pid_kd;
         std::vector<double> pid_ki;
+        std::vector<double> pidg_kp;
+        std::vector<double> pidg_kd;
+        std::vector<double> pidg_ki;
         Eigen::VectorXd tau;
         Eigen::VectorXd tauG;
         Eigen::VectorXd tauG_total;

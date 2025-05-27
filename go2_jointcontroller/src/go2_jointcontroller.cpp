@@ -30,9 +30,14 @@ namespace go2_jointcontroller
         , dq(12)
         , pd_kp(12)
         , pd_kd(12)
+        , pdg_kp(12)
+        , pdg_kd(12)
         , pid_kp(12)
         , pid_kd(12)
         , pid_ki(12)
+        , pidg_kp(12)
+        , pidg_kd(12)
+        , pidg_ki(12)
         , tau(12)
         , tauG(12)
         , tau_(12)
@@ -113,9 +118,14 @@ namespace go2_jointcontroller
             auto_declare<std::vector<double>>("joints.initpos", _targetPos);
             auto_declare<std::vector<double>>("gain.PD.Kp", pd_kp);
             auto_declare<std::vector<double>>("gain.PD.Kd", pd_kd);
+            auto_declare<std::vector<double>>("gain.PDG.Kp", pdg_kp);
+            auto_declare<std::vector<double>>("gain.PDG.Kd", pdg_kd);
             auto_declare<std::vector<double>>("gain.PID.Kp", pid_kp);
             auto_declare<std::vector<double>>("gain.PID.Kd", pid_kd);
             auto_declare<std::vector<double>>("gain.PID.Ki", pid_ki);
+            auto_declare<std::vector<double>>("gain.PIDG.Kp", pidg_kp);
+            auto_declare<std::vector<double>>("gain.PIDG.Kd", pidg_kd);
+            auto_declare<std::vector<double>>("gain.PIDG.Ki", pidg_ki);
             auto_declare<int>("control_mode", control_mode);
             
             auto_declare<int>("update_rate", update_rate);
@@ -164,9 +174,14 @@ namespace go2_jointcontroller
 
         pd_kp = get_node()->get_parameter("gain.PD.Kp").get_value<std::vector<double>>();
         pd_kd = get_node()->get_parameter("gain.PD.Kd").get_value<std::vector<double>>();
+        pdg_kp = get_node()->get_parameter("gain.PDG.Kp").get_value<std::vector<double>>();
+        pdg_kd = get_node()->get_parameter("gain.PDG.Kd").get_value<std::vector<double>>();
         pid_kp = get_node()->get_parameter("gain.PID.Kp").get_value<std::vector<double>>();
         pid_kd = get_node()->get_parameter("gain.PID.Kd").get_value<std::vector<double>>();
         pid_ki = get_node()->get_parameter("gain.PID.Ki").get_value<std::vector<double>>();
+        pidg_kp = get_node()->get_parameter("gain.PIDG.Kp").get_value<std::vector<double>>();
+        pidg_kd = get_node()->get_parameter("gain.PIDG.Kd").get_value<std::vector<double>>();
+        pidg_ki = get_node()->get_parameter("gain.PIDG.Ki").get_value<std::vector<double>>();
 
         update_rate = get_node()->get_parameter("update_rate").get_value<int>();
         control_mode = get_node()->get_parameter("control_mode").get_value<int>();
@@ -466,14 +481,6 @@ namespace go2_jointcontroller
         }
 
         return effort;
-        // commanded_effort[0] = commanded_effort[0] + 25 * q_e[0];
-        // commanded_effort[1] = commanded_effort[1] + 25 * q_e[1];
-        // commanded_effort[3] = commanded_effort[3] + 25 * q_e[3];
-        // commanded_effort[4] = commanded_effort[4] + 25 * dq_e[4];
-        // commanded_effort[6] = commanded_effort[6] + 25 * dq_e[6];
-        // commanded_effort[7] = commanded_effort[7] + 25 * dq_e[7];
-        // commanded_effort[9] = commanded_effort[9] + 25 * dq_e[9];
-        // commanded_effort[10] = commanded_effort[10] + 25 * dq_e[10];
     }
 
     Eigen::VectorXd Go2JointController::computePD_COMPG()
@@ -484,18 +491,10 @@ namespace go2_jointcontroller
         {
             q_e[index] = qr[index] - q[index];
             dq_e[index] = dqr[index] - dq[index];
-            effort[index] = pd_kp[index] * q_e[index] + pd_kd[index] * dq_e[index];
+            effort[index] = pdg_kp[index] * q_e[index] + pdg_kd[index] * dq_e[index];
         }
 
         return effort;
-        // commanded_effort[0] = commanded_effort[0] + 35 * q_e[0] + 0.3 * dq_e[0];
-        // commanded_effort[1] = commanded_effort[1] + 30 * q_e[1] + 0.3 * dq_e[1];
-        // commanded_effort[3] = commanded_effort[3] + 25 * q_e[3] + 0.3 * dq_e[3];
-        // commanded_effort[4] = commanded_effort[4] + 30 * q_e[4] + 0.3 * dq_e[4];
-        // commanded_effort[6] = commanded_effort[6] + 25 * q_e[6] + 0.3 * dq_e[6];
-        // commanded_effort[7] = commanded_effort[7] + 30 * q_e[7] + 0.3 * dq_e[7];
-        // commanded_effort[9] = commanded_effort[9] + 25 * q_e[9] + 0.3 * dq_e[9];
-        // commanded_effort[10] = commanded_effort[10] + 30 * q_e[10] + 0.3 * dq_e[10];
     }
 
     Eigen::VectorXd Go2JointController::computePID()
@@ -512,10 +511,6 @@ namespace go2_jointcontroller
         }
 
         return effort;
-        // commanded_effort[0] = commanded_effort[0] + 15 * q_e[0];
-        // commanded_effort[3] = commanded_effort[3] + 15 * q_e[3];
-        // commanded_effort[6] = commanded_effort[6] + 15 * q_e[6];
-        // commanded_effort[9] = commanded_effort[9] + 15 * q_e[9];
     }
 
     Eigen::VectorXd Go2JointController::computePID_COMPG()
@@ -528,18 +523,10 @@ namespace go2_jointcontroller
             dq_e[index] = dqr[index] - dq[index];
             qi_e[index] += (q_e[index] / update_rate);
 
-            effort[index] = pid_kp[index] * q_e[index] + pid_kd[index] * dq_e[index] + pid_ki[index] * qi_e[index];
+            effort[index] = pidg_kp[index] * q_e[index] + pidg_kd[index] * dq_e[index] + pidg_ki[index] * qi_e[index];
         }
 
         return effort;
-        // commanded_effort[0] = commanded_effort[0] + 35 * q_e[0] + 30 * qi_e[0];
-        // commanded_effort[1] = commanded_effort[1] + 30 * q_e[1] + 20 * qi_e[1];
-        // commanded_effort[3] = commanded_effort[3] + 35 * q_e[3] + 30 * qi_e[3];
-        // commanded_effort[4] = commanded_effort[4] + 35 * q_e[4] + 20 * qi_e[4];
-        // commanded_effort[6] = commanded_effort[6] + 30 * q_e[6] + 20 * qi_e[6];
-        // commanded_effort[7] = commanded_effort[7] + 35 * q_e[7] + 20 * qi_e[7];
-        // commanded_effort[9] = commanded_effort[9] + 30 * q_e[9] + 30 * qi_e[9];
-        // commanded_effort[10] = commanded_effort[10] + 35 * q_e[10] + 20 * qi_e[10];
     }
 
     uint32_t Go2JointController::crc32_core(uint32_t *ptr, uint32_t len)
