@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(cpp_topic)
+project(go2_refs)
 
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
@@ -22,29 +22,25 @@ include_directories(
 
 set(dependencies "geometry_msgs" "rclcpp")
 
-add_executable(cpp_topic_publisher_spiral  src/cpp_topic_publisher_spiral.cpp)
+add_executable(go2_refs  src/go2_refs.cpp)
 
-ament_target_dependencies(cpp_topic_publisher_spiral
-rclcpp
-unitree_go
+ament_target_dependencies(go2_refs
+  rclcpp
+  unitree_go
 )
 
 install(TARGETS
-  cpp_topic_publisher_spiral
-  DESTINATION lib/${PROJECT_NAME})
+  go2_refs
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-# ament_export_libraries(
-#   go2_controller
-#  )
-
 ament_export_dependencies(
   go2_interfaces
- )
-
+)
 
 ament_package()

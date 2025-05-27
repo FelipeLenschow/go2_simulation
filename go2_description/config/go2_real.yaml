@@ -1,6 +1,6 @@
 controller_manager:
   ros__parameters:
-    update_rate: 1000  # Hz
+    update_rate: 500  # Hz
 
     go2_lowstates:
       type: go2_lowstates/Go2Lowstates
@@ -17,18 +17,18 @@ go2_jointcontroller:
 
     joints:
       names:
-        - FL_hip_joint
-        - FL_thigh_joint
-        - FL_calf_joint
         - FR_hip_joint
         - FR_thigh_joint
         - FR_calf_joint
-        - RL_hip_joint
-        - RL_thigh_joint
-        - RL_calf_joint
+        - FL_hip_joint
+        - FL_thigh_joint
+        - FL_calf_joint
         - RR_hip_joint
         - RR_thigh_joint
         - RR_calf_joint
+        - RL_hip_joint
+        - RL_thigh_joint
+        - RL_calf_joint
 
       initpos: [0.0, 1.50, -2.65, 0.0, 1.50, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65] # fold position
 
@@ -36,7 +36,14 @@ go2_jointcontroller:
       PD:
         Kp: [50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
         Kd: [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
+      PDG:
+        Kp: [50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
+        Kd: [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
       PID:
+        Kp: [50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
+        Kd: [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
+        Ki: [45.0, 25.0, 0.0, 45.0, 25.0, 0.0, 45.0, 25.0, 0.0, 45.0, 25.0, 0.0]
+      PIDG:
         Kp: [50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
         Kd: [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
         Ki: [45.0, 25.0, 0.0, 45.0, 25.0, 0.0, 45.0, 25.0, 0.0, 45.0, 25.0, 0.0]

@@ -16,9 +16,9 @@ public:
         publisher_ = this->create_publisher<lowCmd>("/go2_jointcontroller/JointControllerReferences", 1);
 
         // Inicializa posições
-        float startPos[12]   = {0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65}; //fold
-        float targetPos1[12] = {0.1, 1.30, -1.36, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65}; //FL extend
-        float targetPos2[12] = {0.1, 1.30, -1.36, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.1, 1.30, -1.36}; //FL and RR extend 
+        float startPos[12]   = {0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65,  0.0, 1.50, -2.65}; //fold
+        float targetPos1[12] = {0.5, 1.30, -1.36, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65,  0.0, 1.50, -2.65}; //FL extend
+        float targetPos2[12] = {0.5, 1.30, -1.36, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65, -0.5, 1.30, -1.36}; //FL and RR extend 
 
         std::copy(std::begin(startPos), std::end(startPos), sequence[0]);
         std::copy(std::begin(targetPos1), std::end(targetPos1), sequence[1]);
@@ -48,12 +48,8 @@ private:
             {
                 low_cmd.motor_cmd[j].q = _desPos[j];
                 low_cmd.motor_cmd[j].dq = 0;
-                low_cmd.motor_cmd[j].kp = 60.0;
-                low_cmd.motor_cmd[j].kd = 5.0;
-                low_cmd.motor_cmd[j].tau = 0;
             }
 
-            low_cmd.reserve = mode;
             publisher_->publish(low_cmd);
 
             pause_counter++;
@@ -73,15 +69,10 @@ private:
 
         for (int i = 0; i < 12; i++)
         {
-            double interpolated = jointLinearInterpolation(_startPos[i], _desPos[i], rate);
-            low_cmd.motor_cmd[i].q = interpolated;
+            low_cmd.motor_cmd[i].q = _startPos[i] + rate * (_desPos[i] - _startPos[i]);
             low_cmd.motor_cmd[i].dq = 0;
-            low_cmd.motor_cmd[i].kp = 60.0;
-            low_cmd.motor_cmd[i].kd = 5.0;
-            low_cmd.motor_cmd[i].tau = 0;
         }
 
-        low_cmd.reserve = mode;
         publisher_->publish(low_cmd);
 
         // Alternância entre posições a cada 50 iterações
@@ -103,24 +94,18 @@ private:
             }
         }
     }
-    double jointLinearInterpolation(double q0, double qf, double rate)
-    {
-        return q0 + rate * (qf - q0);
-    }
 
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Publisher<lowCmd>::SharedPtr publisher_;
     int motion_time, rate_count, pause_counter;
     bool paused = false;
-    int current_step;
+    int current_step = 1;
     static const int sequence_size = 4;
     static const int pause_duration = 20; // número de ciclos de 100ms para pausar (2s)
 
     float _startPos[12];
     float _desPos[12];
     float sequence[sequence_size][12];
-
-    uint32_t mode = 2;
 };
 
 int main(int argc, char *argv[])

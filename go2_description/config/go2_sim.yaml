@@ -1,6 +1,6 @@
 controller_manager:
   ros__parameters:
-    update_rate: 1000  # Hz
+    update_rate: 500  # Hz
 
     go2_actuator:
       type: go2_actuator/Go2Actuator
@@ -13,7 +13,7 @@ controller_manager:
 
 go2_actuator:
   ros__parameters:
-    update_rate: 1000
+    update_rate: 500
 
     joints:
       names:
@@ -23,12 +23,12 @@ go2_actuator:
         - FL_hip_joint
         - FL_thigh_joint
         - FL_calf_joint
-        - RL_hip_joint
-        - RL_thigh_joint
-        - RL_calf_joint
         - RR_hip_joint
         - RR_thigh_joint
         - RR_calf_joint
+        - RL_hip_joint
+        - RL_thigh_joint
+        - RL_calf_joint
 
     command_interfaces: 
       - effort
@@ -40,7 +40,7 @@ go2_actuator:
 
 go2_lowstates:
   ros__parameters:
-    update_rate: 1000
+    update_rate: 500
     
     joints:     
       - FR_hip_joint
@@ -49,12 +49,12 @@ go2_lowstates:
       - FL_hip_joint
       - FL_thigh_joint
       - FL_calf_joint
-      - RL_hip_joint
-      - RL_thigh_joint
-      - RL_calf_joint
       - RR_hip_joint
       - RR_thigh_joint
       - RR_calf_joint
+      - RL_hip_joint
+      - RL_thigh_joint
+      - RL_calf_joint
 
     state_interfaces:
       - position
@@ -64,7 +64,7 @@ go2_jointcontroller:
   ros__parameters:
     update_rate: 200
 
-    control_mode: 3
+    control_mode: 1
     
     joints:
       names:
@@ -74,12 +74,12 @@ go2_jointcontroller:
         - FL_hip_joint
         - FL_thigh_joint
         - FL_calf_joint
-        - RL_hip_joint
-        - RL_thigh_joint
-        - RL_calf_joint
         - RR_hip_joint
         - RR_thigh_joint
         - RR_calf_joint
+        - RL_hip_joint
+        - RL_thigh_joint
+        - RL_calf_joint
       
       initpos: [0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65] # fold position
 

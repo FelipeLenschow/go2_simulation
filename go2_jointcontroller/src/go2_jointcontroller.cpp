@@ -63,7 +63,7 @@ namespace go2_jointcontroller
         , pinocchio_frames(12)
     {
         const auto package_share_path = ament_index_cpp::get_package_share_directory("go2_description");
-        const auto xacro_path = std::filesystem::path(package_share_path) / "urdf" / "go2.xacro.urdf";
+        const auto xacro_path = std::filesystem::path(package_share_path) / "urdf" / "go2.xacro";
         const auto urdf_path = std::filesystem::temp_directory_path() / "go2.urdf";
 
         // Convert Xacro to URDF using ROS 2 xacro CLI
@@ -211,7 +211,6 @@ namespace go2_jointcontroller
             [this](const std::shared_ptr<lowCmd> msg) -> void
             {
                 std::lock_guard<std::mutex> lock(this->mutex_controller);
-                control_mode = msg->reserve;
 
                 for (int index = 0; index < 12; index++)
                 {

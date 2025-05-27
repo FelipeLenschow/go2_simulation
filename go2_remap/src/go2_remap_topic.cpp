@@ -76,11 +76,6 @@ void Go2Remap::joint_callback(const unitree_go::msg::LowState::SharedPtr msg)
     {
         joint_positions.push_back(msg->motor_state[i].q);
 
-        if (std::find(collision_links_.begin(), collision_links_.end(), joint_names_[i]) != collision_links_.end())
-        {
-            continue;
-        }
-
         geometry_msgs::msg::TransformStamped tf_msg;
         tf_msg.header.stamp = timestamp;
         tf_msg.header.frame_id = "base_link";
