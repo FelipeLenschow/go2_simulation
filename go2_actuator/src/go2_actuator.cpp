@@ -18,8 +18,6 @@ namespace go2_actuator
     Go2Actuator::Go2Actuator()
         : controller_interface::ControllerInterface()
         , joint_names_({})
-        , q(12)
-        , dq(12)
         , kp(12)
         , kd(12)
         , tau(12)
@@ -31,13 +29,9 @@ namespace go2_actuator
     {
         try
         {
-            auto_declare<std::vector<std::string>>("joints", joint_names_);
+            auto_declare<std::vector<std::string>>("joints.names", joint_names_);
             auto_declare<std::vector<std::string>>("command_interfaces", command_interface_types_);
             auto_declare<std::vector<std::string>>("state_interfaces", state_interface_types_);
-
-            auto_declare<double>("gain.Kp", 60.0);
-            auto_declare<double>("gain.Kd", 5.0);
-            auto_declare<std::vector<double>>("joints_references", {});
         }
         catch (const std::exception &e)
         {
@@ -87,11 +81,11 @@ namespace go2_actuator
 
         const auto logger = get_node()->get_logger();
 
-        joint_names_ = get_node()->get_parameter("joints").as_string_array();
+        joint_names_ = get_node()->get_parameter("joints.names").as_string_array();
 
         if (joint_names_.empty())
         {
-            RCLCPP_WARN(logger, "'joints' parameter is empty.");
+            RCLCPP_WARN(logger, "'joints.names' parameter is empty.");
         }
 
         // Command interface checking
@@ -151,18 +145,12 @@ namespace go2_actuator
             get_interface_list(command_interface_types_).c_str(),
             get_interface_list(state_interface_types_).c_str());
 
-        // Gains update //
-        // Kp_gain = get_node()->get_parameter("gain.Kp").get_value<double>();
-        // Kd_gain = get_node()->get_parameter("gain.Kd").get_value<double>();
-
-        std::vector<double> joints_references = get_node()->get_parameter("joints_references").get_value<std::vector<double>>();
-
         for (int index = 0; index < 12; index++)
         {
-            kp[index] = 0; //Kp_gain;
-            kd[index] = 0; //Kd_gain;
+            kp[index] = 0;
+            kd[index] = 0;
             tau[index] = 0;
-            qr[index] = 0;//joints_references[index];
+            qr[index] = 0;
             dqr[index] = 0;
         }
 
@@ -180,8 +168,6 @@ namespace go2_actuator
                     tau[index] = msg->motor_cmd[index].tau;
                 }
             });
-
-        // joints_control_publisher_ = get_node()->create_publisher<std_msgs::msg::Float64MultiArray>("~/LowCommands", 10);
 
         RCLCPP_INFO(logger, "Actuator update");
 
@@ -256,17 +242,21 @@ namespace go2_actuator
         
         for (auto index{0}; index < 12; index++)
         {
-            auto effort = kp[index] * (qr[index] - q[index]) + kd[index] * (dqr[index] - dq[index]) + tau[index];
+            // get the joint position
+            auto q = joint_state_interface_[0][index].get().get_optional().value_or(0);
+            // get the joint velocity
+            auto dq = joint_state_interface_[1][index].get().get_optional().value_or(0);
 
+            auto effort = kp[index] * (qr[index] - q) + kd[index] * (dqr[index] - dq) + tau[index];
+            
             if (std::isfinite(effort))
                 (void)joint_command_interface_[0][index].get().set_value(effort);
             else
                 (void)joint_command_interface_[0][index].get().set_value(0.0);
-        }
 
+        }
         return controller_interface::return_type::OK;
     }
-
 }
 #include <pluginlib/class_list_macros.hpp>
 PLUGINLIB_EXPORT_CLASS(

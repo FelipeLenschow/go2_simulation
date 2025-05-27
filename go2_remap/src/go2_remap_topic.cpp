@@ -50,15 +50,15 @@ void Go2Remap::joint_callback(const unitree_go::msg::LowState::SharedPtr msg)
 
     // **Publish stored `world -> odom` transform**
     // **Ensure `world -> odom` is published**
-    if (!world_odom_tf_.header.frame_id.empty() && !world_odom_tf_.child_frame_id.empty())
-    {
-        world_odom_tf_.header.stamp = timestamp;  // Update timestamp
-        tf_transforms.push_back(world_odom_tf_);
-    }
-    else
-    {
-        RCLCPP_WARN(this->get_logger(), "Skipping `world -> odom` transform: Frame IDs are missing!");
-    }
+    // if (!world_odom_tf_.header.frame_id.empty() && !world_odom_tf_.child_frame_id.empty())
+    // {
+    //     world_odom_tf_.header.stamp = timestamp;  // Update timestamp
+    //     tf_transforms.push_back(world_odom_tf_);
+    // }
+    // else
+    // {
+    //     RCLCPP_WARN(this->get_logger(), "Skipping `world -> odom` transform: Frame IDs are missing!");
+    // }
 
     // **Static `odom -> base_link` (Fixed Transform)**
     geometry_msgs::msg::TransformStamped odom_base_tf;

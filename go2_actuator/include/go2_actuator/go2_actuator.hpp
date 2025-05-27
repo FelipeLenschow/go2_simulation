@@ -56,19 +56,11 @@ namespace go2_actuator
         std::vector<std::string> command_interface_types_;
         std::vector<std::string> state_interface_types_;
 
-    //     pinocchio::Model model;
-    //     std::shared_ptr<pinocchio::Data> data;
-
-        Eigen::VectorXd q;
-        Eigen::VectorXd dq;
         Eigen::VectorXd kp;
         Eigen::VectorXd kd;
         Eigen::VectorXd tau;
         Eigen::VectorXd qr;
         Eigen::VectorXd dqr;
-
-        double Kp_gain;
-        double Kd_gain;
 
         const std::vector<std::string> allowed_state_interface_types_ = {
             hardware_interface::HW_IF_POSITION,
@@ -89,7 +81,6 @@ namespace go2_actuator
         std::mutex mutex_actuator;
 
         rclcpp::Subscription<lowCmd>::SharedPtr joints_reference_subscriber_;
-    //     rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr joints_control_publisher_;
 
     //     float _startPos[12] = {0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
 

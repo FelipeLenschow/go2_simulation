@@ -14,21 +14,17 @@ public:
         : Node("low_cmd"), motion_time(0), rate_count(0)
     {
         publisher_ = this->create_publisher<lowCmd>("/go2_jointcontroller/JointControllerReferences", 1);
-        // publisher_ = this->create_publisher<lowCmd>("/go2_actuator/LowCommands", 1);
 
         // Inicializa posições
-        // float targetPos1[12] = {0.0, 1.50, -2.65, 0.2, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
-        // float targetPos2[12] = {0.1, 1.30, -1.36, 0.2, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
-        // float startPos[12] = {0.0, 1.36, -2.00, 0.2, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
+        float startPos[12]   = {0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65}; //fold
+        float targetPos1[12] = {0.1, 1.30, -1.36, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65}; //FL extend
+        float targetPos2[12] = {0.1, 1.30, -1.36, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.1, 1.30, -1.36}; //FL and RR extend 
 
-        float targetPos1[12] = {0.0, 1.50, -2.65, 0.0, 1.50, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
-        float targetPos2[12] = {0.1, 1.30, -1.36, 0.1, 1.30, -1.36, -0.2, 1.36, -2.00, 0.2, 1.36, -2.65};
-        float startPos[12] = {0.0, 1.36, -2.00, 0.0, 1.36, -2.00, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
-
-        std::copy(std::begin(targetPos1), std::end(targetPos1), sequence[0]);
-        std::copy(std::begin(targetPos2), std::end(targetPos2), sequence[1]);
+        std::copy(std::begin(startPos), std::end(startPos), sequence[0]);
+        std::copy(std::begin(targetPos1), std::end(targetPos1), sequence[1]);
         std::copy(std::begin(startPos), std::end(startPos), sequence[2]);
-
+        std::copy(std::begin(targetPos2), std::end(targetPos2), sequence[3]);
+        
         std::copy(std::begin(sequence[0]), std::end(sequence[0]), _startPos);
         std::copy(std::begin(sequence[1]), std::end(sequence[1]), _desPos);
 
@@ -115,9 +111,9 @@ private:
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Publisher<lowCmd>::SharedPtr publisher_;
     int motion_time, rate_count, pause_counter;
-    bool paused;
+    bool paused = false;
     int current_step;
-    static const int sequence_size = 3;
+    static const int sequence_size = 4;
     static const int pause_duration = 20; // número de ciclos de 100ms para pausar (2s)
 
     float _startPos[12];

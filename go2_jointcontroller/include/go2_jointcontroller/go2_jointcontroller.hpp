@@ -67,15 +67,15 @@ namespace go2_jointcontroller
 
         void computeG0();
 
-        void computePD();
+        Eigen::VectorXd computePD();
 
-        void computePD_COMPG();
+        Eigen::VectorXd computePD_COMPG();
 
         void computeTotalGravityCompensation();
 
-        void computePID();
+        Eigen::VectorXd computePID();
 
-        void computePID_COMPG();
+        Eigen::VectorXd computePID_COMPG();
 
         void computeTauG();
 
@@ -139,9 +139,11 @@ namespace go2_jointcontroller
         Eigen::VectorXd gravidade;
         Eigen::VectorXd q;
         Eigen::VectorXd dq;
-        std::vector<double> kp;
-        std::vector<double> kd;
-        Eigen::VectorXd ki;
+        std::vector<double> pd_kp;
+        std::vector<double> pd_kd;
+        std::vector<double> pid_kp;
+        std::vector<double> pid_kd;
+        std::vector<double> pid_ki;
         Eigen::VectorXd tau;
         Eigen::VectorXd tauG;
         Eigen::VectorXd tauG_total;
@@ -169,6 +171,8 @@ namespace go2_jointcontroller
         Eigen::VectorXd q_pinocchio;
         Eigen::VectorXd v_pinocchio;
         Eigen::VectorXd a_pinocchio;
+
+        int update_rate;
 
         lowCmd lowCmd_msg;
 

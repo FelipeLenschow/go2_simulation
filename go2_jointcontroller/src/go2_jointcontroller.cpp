@@ -28,9 +28,11 @@ namespace go2_jointcontroller
         , gravidade(3)
         , q(12)
         , dq(12)
-        , kp(12)
-        , kd(12)
-        , ki(12)
+        , pd_kp(12)
+        , pd_kd(12)
+        , pid_kp(12)
+        , pid_kd(12)
+        , pid_ki(12)
         , tau(12)
         , tauG(12)
         , tau_(12)
@@ -45,8 +47,9 @@ namespace go2_jointcontroller
         , vetor_pinocchio(12)
         , v(Eigen::VectorXd::Zero(12))
         , a(Eigen::VectorXd::Zero(12))
+        , update_rate(0)
         , _percent(0)
-        , _duration(5000)
+        , _duration(1000)
         , _started(false)
         , _startPos(12)
         , _targetPos(12)
@@ -100,10 +103,6 @@ namespace go2_jointcontroller
         mass[9] = mass[6] = mass[3] = mass[0] = 0.678;
         mass[10] = mass[7] = mass[4] = mass[1] = 1.152;
         mass[11] = mass[8] = mass[5] = mass[2] = 0.154;
-
-        ki[0] = ki[3] = ki[6] = ki[9] = 45;
-        ki[1] = ki[4] = ki[7] = ki[10] = 25;
-        ki[2] = ki[5] = ki[8] = ki[11] = 0;
     }
 
     controller_interface::CallbackReturn Go2JointController::on_init()
@@ -112,9 +111,14 @@ namespace go2_jointcontroller
         {
             auto_declare<std::vector<std::string>>("joints.names", joint_names_);
             auto_declare<std::vector<double>>("joints.initpos", _targetPos);
-            auto_declare<std::vector<double>>("gain.PD.Kp", kp);
-            auto_declare<std::vector<double>>("gain.PD.Kd", kd);
+            auto_declare<std::vector<double>>("gain.PD.Kp", pd_kp);
+            auto_declare<std::vector<double>>("gain.PD.Kd", pd_kd);
+            auto_declare<std::vector<double>>("gain.PID.Kp", pid_kp);
+            auto_declare<std::vector<double>>("gain.PID.Kd", pid_kd);
+            auto_declare<std::vector<double>>("gain.PID.Ki", pid_ki);
             auto_declare<int>("control_mode", control_mode);
+            
+            auto_declare<int>("update_rate", update_rate);
         }
         catch (const std::exception &e)
         {
@@ -158,20 +162,13 @@ namespace go2_jointcontroller
             return CallbackReturn::FAILURE;
         }
 
-        kp = get_node()->get_parameter("gain.PD.Kp").get_value<std::vector<double>>();
-        if (kp.size() != 12)
-        {
-            RCLCPP_ERROR(logger, "Kp gains are not a vector of size 12, verify yaml file.");
-            return CallbackReturn::FAILURE;
-        }
-        
-        kd = get_node()->get_parameter("gain.PD.Kd").get_value<std::vector<double>>();
-        if (kd.size() != 12)
-        {
-            RCLCPP_ERROR(logger, "Kd gains are not a vector of size 12, verify yaml file.");
-            return CallbackReturn::FAILURE;
-        }
+        pd_kp = get_node()->get_parameter("gain.PD.Kp").get_value<std::vector<double>>();
+        pd_kd = get_node()->get_parameter("gain.PD.Kd").get_value<std::vector<double>>();
+        pid_kp = get_node()->get_parameter("gain.PID.Kp").get_value<std::vector<double>>();
+        pid_kd = get_node()->get_parameter("gain.PID.Kd").get_value<std::vector<double>>();
+        pid_ki = get_node()->get_parameter("gain.PID.Ki").get_value<std::vector<double>>();
 
+        update_rate = get_node()->get_parameter("update_rate").get_value<int>();
         control_mode = get_node()->get_parameter("control_mode").get_value<int>();
 
         for (size_t i = 0; i < 12; i++)
@@ -205,9 +202,9 @@ namespace go2_jointcontroller
                 {
                     qr[index] = msg->motor_cmd[index].q;
                     dqr[index] = msg->motor_cmd[index].dq;
-                    kd[index] = msg->motor_cmd[index].kd;
-                    kp[index] = msg->motor_cmd[index].kp;
-                    tau[index] = msg->motor_cmd[index].tau;
+                    // kd[index] = msg->motor_cmd[index].kd;
+                    // kp[index] = msg->motor_cmd[index].kp;
+                    // tau[index] = msg->motor_cmd[index].tau;
                 }
             });
 
@@ -245,6 +242,7 @@ namespace go2_jointcontroller
         for(int i=0; i<12; i++)
         {
             _startPos[i] = q[i];
+            qr[i] = _targetPos[i];
         }
 
         return CallbackReturn::SUCCESS;
@@ -278,8 +276,8 @@ namespace go2_jointcontroller
                     {
                         lowCmd_msg.motor_cmd[j].q = (1 - _percent) * _startPos[j] + _percent * _targetPos[j];
                         lowCmd_msg.motor_cmd[j].dq = 0;
-                        lowCmd_msg.motor_cmd[j].kp = kp[j];
-                        lowCmd_msg.motor_cmd[j].kd = kd[j];
+                        lowCmd_msg.motor_cmd[j].kp = pd_kp[j];
+                        lowCmd_msg.motor_cmd[j].kd = pd_kd[j];
                         lowCmd_msg.motor_cmd[j].tau = 0;
                     }
                 }
@@ -293,70 +291,39 @@ namespace go2_jointcontroller
                 switch (control_mode)
                 {
                     case 1: // PD only
-                        computePD();
-                        for (int j = 0; j < 12; j++)
-                        {
-                            lowCmd_msg.motor_cmd[j].q = qr[j];
-                            lowCmd_msg.motor_cmd[j].dq = dqr[j];
-                            lowCmd_msg.motor_cmd[j].kp = kp[j];
-                            lowCmd_msg.motor_cmd[j].kd = kd[j];
-                            lowCmd_msg.motor_cmd[j].tau = 0; // commanded_effort[j];
-                        }
+                        commanded_effort = computePD();
+                        tauG = Eigen::VectorXd::Zero(12);
                         break;
 
                     case 2: // PD + Gravity Compensation
-                        computePD_COMPG();
+                        commanded_effort = computePD_COMPG();
                         computeTotalGravityCompensation();
-                        for (int j = 0; j < 12; j++)
-                        {
-                            lowCmd_msg.motor_cmd[j].q = 0;
-                            lowCmd_msg.motor_cmd[j].dq = 0;
-                            lowCmd_msg.motor_cmd[j].kp = 0;
-                            lowCmd_msg.motor_cmd[j].kd = 0;
-                            lowCmd_msg.motor_cmd[j].tau = commanded_effort[j] + tauG[j];
-                        }
                         break;
 
                     case 3: // PID
-                        computePID();
-                        for (int j = 0; j < 12; j++)
-                        {
-                            lowCmd_msg.motor_cmd[j].q = 0;
-                            lowCmd_msg.motor_cmd[j].dq = 0;
-                            lowCmd_msg.motor_cmd[j].kp = 0;
-                            lowCmd_msg.motor_cmd[j].kd = 0;
-                            lowCmd_msg.motor_cmd[j].tau = commanded_effort[j];
-                        }
+                        commanded_effort = computePID();
+                        tauG = Eigen::VectorXd::Zero(12);
                         break;
 
                     case 4: // PID + Gravity Compensation
-
-                        computePID_COMPG();
+                        commanded_effort = computePID_COMPG();
                         computeTotalGravityCompensation();
-                        for (int j = 0; j < 12; j++)
-                        {
-                            lowCmd_msg.motor_cmd[j].q = 0;
-                            lowCmd_msg.motor_cmd[j].dq = 0;
-                            lowCmd_msg.motor_cmd[j].kp = 0;
-                            lowCmd_msg.motor_cmd[j].kd = 0;
-                            lowCmd_msg.motor_cmd[j].tau = commanded_effort[j] + tauG[j];
-                        }
                         break;
 
                     default:
                         RCLCPP_ERROR(logger, "Invalid control mode: %d", control_mode);
                         return controller_interface::return_type::ERROR;
                 }
+                for (int j = 0; j < 12; j++)
+                {
+                    lowCmd_msg.motor_cmd[j].q = 0;
+                    lowCmd_msg.motor_cmd[j].dq = 0;
+                    lowCmd_msg.motor_cmd[j].kp = 0;
+                    lowCmd_msg.motor_cmd[j].kd = 0;
+                    lowCmd_msg.motor_cmd[j].tau = commanded_effort[j] + tauG[j];
+                }
             }
             
-            // std::cout << "## " << _percent << std::endl;
-            // for (int i = 0; i < 12; i++)      
-            // {                  
-            //     std::cout << "## " << i << " #msg#" << lowCmd_msg.motor_cmd[i].q 
-            //     << " #ini#" << _startPos[i] 
-            //     << " #tag#" << _targetPos[i] << std::endl;
-            // }
-
             // Publish the control message
             get_crc(lowCmd_msg);
             joints_cmd_publisher_->publish(lowCmd_msg);
@@ -487,75 +454,92 @@ namespace go2_jointcontroller
         computeG12();
     }
 
-    void Go2JointController::computePD()
+    Eigen::VectorXd Go2JointController::computePD()
     {
+        Eigen::VectorXd effort(12);
+
         for (auto index{0}; index < 12; index++)
         {
             q_e[index] = qr[index] - q[index];
             dq_e[index] = dqr[index] - dq[index];
-            commanded_effort[index] = kp[index] * q_e[index] + kd[index] * dq_e[index];
+            effort[index] = pd_kp[index] * q_e[index] + pd_kd[index] * dq_e[index];
         }
-        commanded_effort[0] = commanded_effort[0] + 25 * q_e[0];
-        commanded_effort[1] = commanded_effort[1] + 25 * q_e[1];
-        commanded_effort[3] = commanded_effort[3] + 25 * q_e[3];
-        commanded_effort[4] = commanded_effort[4] + 25 * dq_e[4];
-        commanded_effort[6] = commanded_effort[6] + 25 * dq_e[6];
-        commanded_effort[7] = commanded_effort[7] + 25 * dq_e[7];
-        commanded_effort[9] = commanded_effort[9] + 25 * dq_e[9];
-        commanded_effort[10] = commanded_effort[10] + 25 * dq_e[10];
+
+        return effort;
+        // commanded_effort[0] = commanded_effort[0] + 25 * q_e[0];
+        // commanded_effort[1] = commanded_effort[1] + 25 * q_e[1];
+        // commanded_effort[3] = commanded_effort[3] + 25 * q_e[3];
+        // commanded_effort[4] = commanded_effort[4] + 25 * dq_e[4];
+        // commanded_effort[6] = commanded_effort[6] + 25 * dq_e[6];
+        // commanded_effort[7] = commanded_effort[7] + 25 * dq_e[7];
+        // commanded_effort[9] = commanded_effort[9] + 25 * dq_e[9];
+        // commanded_effort[10] = commanded_effort[10] + 25 * dq_e[10];
     }
 
-    void Go2JointController::computePD_COMPG()
+    Eigen::VectorXd Go2JointController::computePD_COMPG()
     {
-        for (auto index{0}; index < 12; index++)
-        {
-            q_e[index] = qr[index] - q[index];
-            dq_e[index] = dqr[index] - dq[index];
-            commanded_effort[index] = 25 * q_e[index] + 0.4 * dq_e[index];
-        }
-        commanded_effort[0] = commanded_effort[0] + 35 * q_e[0] + 0.3 * dq_e[0];
-        commanded_effort[1] = commanded_effort[1] + 30 * q_e[1] + 0.3 * dq_e[1];
-        commanded_effort[3] = commanded_effort[3] + 25 * q_e[3] + 0.3 * dq_e[3];
-        commanded_effort[4] = commanded_effort[4] + 30 * q_e[4] + 0.3 * dq_e[4];
-        commanded_effort[6] = commanded_effort[6] + 25 * q_e[6] + 0.3 * dq_e[6];
-        commanded_effort[7] = commanded_effort[7] + 30 * q_e[7] + 0.3 * dq_e[7];
-        commanded_effort[9] = commanded_effort[9] + 25 * q_e[9] + 0.3 * dq_e[9];
-        commanded_effort[10] = commanded_effort[10] + 30 * q_e[10] + 0.3 * dq_e[10];
-    }
-    void Go2JointController::computePID()
-    {
-        for (auto index{0}; index < 12; index++)
-        {
-            q_e[index] = qr[index] - q[index];
-            dq_e[index] = dqr[index] - dq[index];
-            qi_e[index] += (q_e[index] / 1000);
+        Eigen::VectorXd effort(12);
 
-            commanded_effort[index] = 50 * q_e[index] + 0.5 * dq_e[index] + ki[index] * qi_e[index];
+        for (auto index{0}; index < 12; index++)
+        {
+            q_e[index] = qr[index] - q[index];
+            dq_e[index] = dqr[index] - dq[index];
+            effort[index] = pd_kp[index] * q_e[index] + pd_kd[index] * dq_e[index];
         }
-        commanded_effort[0] = commanded_effort[0] + 15 * q_e[0];
-        commanded_effort[3] = commanded_effort[3] + 15 * q_e[3];
-        commanded_effort[6] = commanded_effort[6] + 15 * q_e[6];
-        commanded_effort[9] = commanded_effort[9] + 15 * q_e[9];
+
+        return effort;
+        // commanded_effort[0] = commanded_effort[0] + 35 * q_e[0] + 0.3 * dq_e[0];
+        // commanded_effort[1] = commanded_effort[1] + 30 * q_e[1] + 0.3 * dq_e[1];
+        // commanded_effort[3] = commanded_effort[3] + 25 * q_e[3] + 0.3 * dq_e[3];
+        // commanded_effort[4] = commanded_effort[4] + 30 * q_e[4] + 0.3 * dq_e[4];
+        // commanded_effort[6] = commanded_effort[6] + 25 * q_e[6] + 0.3 * dq_e[6];
+        // commanded_effort[7] = commanded_effort[7] + 30 * q_e[7] + 0.3 * dq_e[7];
+        // commanded_effort[9] = commanded_effort[9] + 25 * q_e[9] + 0.3 * dq_e[9];
+        // commanded_effort[10] = commanded_effort[10] + 30 * q_e[10] + 0.3 * dq_e[10];
     }
 
-    void Go2JointController::computePID_COMPG()
+    Eigen::VectorXd Go2JointController::computePID()
     {
+        Eigen::VectorXd effort(12);
+
         for (auto index{0}; index < 12; index++)
         {
             q_e[index] = qr[index] - q[index];
             dq_e[index] = dqr[index] - dq[index];
-            qi_e[index] += (q_e[index] / 1000);
+            qi_e[index] += (q_e[index] / update_rate);
 
-            commanded_effort[index] = 30 * q_e[index] + 0.6 * dq_e[index];
+            effort[index] = pid_kp[index] * q_e[index] + pid_kd[index] * dq_e[index] + pid_ki[index] * qi_e[index];
         }
-        commanded_effort[0] = commanded_effort[0] + 35 * q_e[0] + 30 * qi_e[0];
-        commanded_effort[1] = commanded_effort[1] + 30 * q_e[1] + 20 * qi_e[1];
-        commanded_effort[3] = commanded_effort[3] + 35 * q_e[3] + 30 * qi_e[3];
-        commanded_effort[4] = commanded_effort[4] + 35 * q_e[4] + 20 * qi_e[4];
-        commanded_effort[6] = commanded_effort[6] + 30 * q_e[6] + 20 * qi_e[6];
-        commanded_effort[7] = commanded_effort[7] + 35 * q_e[7] + 20 * qi_e[7];
-        commanded_effort[9] = commanded_effort[9] + 30 * q_e[9] + 30 * qi_e[9];
-        commanded_effort[10] = commanded_effort[10] + 35 * q_e[10] + 20 * qi_e[10];
+
+        return effort;
+        // commanded_effort[0] = commanded_effort[0] + 15 * q_e[0];
+        // commanded_effort[3] = commanded_effort[3] + 15 * q_e[3];
+        // commanded_effort[6] = commanded_effort[6] + 15 * q_e[6];
+        // commanded_effort[9] = commanded_effort[9] + 15 * q_e[9];
+    }
+
+    Eigen::VectorXd Go2JointController::computePID_COMPG()
+    {
+        Eigen::VectorXd effort(12);
+
+        for (auto index{0}; index < 12; index++)
+        {
+            q_e[index] = qr[index] - q[index];
+            dq_e[index] = dqr[index] - dq[index];
+            qi_e[index] += (q_e[index] / update_rate);
+
+            effort[index] = pid_kp[index] * q_e[index] + pid_kd[index] * dq_e[index] + pid_ki[index] * qi_e[index];
+        }
+
+        return effort;
+        // commanded_effort[0] = commanded_effort[0] + 35 * q_e[0] + 30 * qi_e[0];
+        // commanded_effort[1] = commanded_effort[1] + 30 * q_e[1] + 20 * qi_e[1];
+        // commanded_effort[3] = commanded_effort[3] + 35 * q_e[3] + 30 * qi_e[3];
+        // commanded_effort[4] = commanded_effort[4] + 35 * q_e[4] + 20 * qi_e[4];
+        // commanded_effort[6] = commanded_effort[6] + 30 * q_e[6] + 20 * qi_e[6];
+        // commanded_effort[7] = commanded_effort[7] + 35 * q_e[7] + 20 * qi_e[7];
+        // commanded_effort[9] = commanded_effort[9] + 30 * q_e[9] + 30 * qi_e[9];
+        // commanded_effort[10] = commanded_effort[10] + 35 * q_e[10] + 20 * qi_e[10];
     }
 
     uint32_t Go2JointController::crc32_core(uint32_t *ptr, uint32_t len)

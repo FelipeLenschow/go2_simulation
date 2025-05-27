@@ -16,18 +16,19 @@ go2_actuator:
     update_rate: 1000
 
     joints:
-      - FR_hip_joint
-      - FR_thigh_joint
-      - FR_calf_joint
-      - FL_hip_joint
-      - FL_thigh_joint
-      - FL_calf_joint
-      - RL_hip_joint
-      - RL_thigh_joint
-      - RL_calf_joint
-      - RR_hip_joint
-      - RR_thigh_joint
-      - RR_calf_joint
+      names:
+        - FR_hip_joint
+        - FR_thigh_joint
+        - FR_calf_joint
+        - FL_hip_joint
+        - FL_thigh_joint
+        - FL_calf_joint
+        - RL_hip_joint
+        - RL_thigh_joint
+        - RL_calf_joint
+        - RR_hip_joint
+        - RR_thigh_joint
+        - RR_calf_joint
 
     command_interfaces: 
       - effort
@@ -36,12 +37,6 @@ go2_actuator:
       - position
       - velocity
       - effort
-
-    gain:
-      Kp: 60.0
-      Kd: 5.0
-
-    joints_references: [ 0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65]
 
 go2_lowstates:
   ros__parameters:
@@ -69,7 +64,7 @@ go2_jointcontroller:
   ros__parameters:
     update_rate: 200
 
-    control_mode: 1
+    control_mode: 3
     
     joints:
       names:
@@ -86,9 +81,13 @@ go2_jointcontroller:
         - RR_thigh_joint
         - RR_calf_joint
       
-      initpos: [2.0, 1.50, -2.65, 0.0, 1.50, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65]
+      initpos: [0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65] # fold position
 
     gain:
       PD:
         Kp: [50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
         Kd: [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
+      PID:
+        Kp: [50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
+        Kd: [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
+        Ki: [45.0, 25.0, 0.0, 45.0, 25.0, 0.0, 45.0, 25.0, 0.0, 45.0, 25.0, 0.0]
