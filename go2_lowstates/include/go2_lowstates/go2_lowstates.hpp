@@ -86,9 +86,6 @@ namespace go2_lowstates
         rclcpp::Subscription<imuStates>::SharedPtr imu_subscriber_;       // subscrevendo as informações do tipo imuStates no ponteiro imu_subscriber_
         rclcpp::Subscription<effortstates>::SharedPtr effort_subscriber_; // subscrevendo as informações do tipo std_msgs.... no ponteiro effort_subscriber_
 
-        double sample_time = 0;
-        double elapsed_time = 0;
-        double last_update_time_ = 0;
     };
 
 }

@@ -99,8 +99,6 @@ namespace go2_jointcontroller
             std::array<uint8_t, 3> reserve;
         } BmsCmd;
 
-
-
         typedef struct
         {
             uint8_t mode; // desired working mode
@@ -168,26 +166,27 @@ namespace go2_jointcontroller
         Eigen::VectorXd tau_contrib;
         Eigen::Vector3d F_grav;
 
-        // Eigen::VectorXd reorder_to_pinocchio; /////////////////////////////////////
-        // Eigen::VectorXd reorder_to_desired;
         Eigen::VectorXd q_pinocchio;
         Eigen::VectorXd v_pinocchio;
         Eigen::VectorXd a_pinocchio;
 
         lowCmd lowCmd_msg;
 
+        double _percent;
+        double _duration;
+        bool _started;
+        std::vector<double> _startPos;
+        std::vector<double> _targetPos;
+        uint32_t _lowTick;
+
         rclcpp::Publisher<lowCmd>::SharedPtr joints_cmd_publisher_;
 
         rclcpp::Subscription<lowCmd>::SharedPtr controller_reference_subscriber_;
         rclcpp::Subscription<lowStates>::SharedPtr lowstate_subscriber_;
 
-        uint32_t control_mode = 2;
+        uint32_t control_mode;
 
         std::mutex mutex_controller;
-
-        double sample_time = 0;
-        double elapsed_time = 0;
-        double last_update_time_ = 0;
 
         //////////////////////////////////////////////////////////
         const std::vector<std::string> desired_order = {

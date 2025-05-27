@@ -1,6 +1,6 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, RegisterEventHandler
-from launch.event_handlers import OnProcessExit, OnProcessStart
+from launch.event_handlers import OnProcessExit, OnProcessStart, OnExecutionComplete
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
@@ -141,37 +141,23 @@ def generate_launch_description():
 
     # ───── Launch events ─────
     spawn_then_actuator = RegisterEventHandler(
-        event_handler=OnProcessExit(
+        event_handler=OnProcessStart(
             target_action=gz_spawn_entity,
-            on_exit=[go2_actuator_spawner],
-        )
-    )
-
-    actuator_then_lowstates = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=go2_actuator_spawner,
-            on_exit=[go2_low_states_spawner],
-        )
-    )
-
-    spawn_then_joint_controller = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=gz_spawn_entity,
-            on_exit=[go2_joint_controller],
+            on_start=[go2_actuator_spawner, go2_low_states_spawner, go2_remap_node],
         )
     )
 
     joint_controller_then_remap = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=go2_joint_controller,
-            on_exit=[go2_remap_node],
+        event_handler=OnExecutionComplete(
+            target_action=go2_actuator_spawner,
+            on_completion=[go2_joint_controller],
         )
     )
 
     lowstates_then_rviz = RegisterEventHandler(
-        event_handler=OnProcessStart(
-            target_action=go2_low_states_spawner,
-            on_start=[rviz_node],
+        event_handler=OnExecutionComplete(
+            target_action=go2_joint_controller,
+            on_completion=[rviz_node],
         )
     )
 
@@ -201,8 +187,6 @@ def generate_launch_description():
         node_robot_state_publisher,
         gz_spawn_entity,
         spawn_then_actuator,
-        actuator_then_lowstates,
-        spawn_then_joint_controller,
         joint_controller_then_remap,
         lowstates_then_rviz,
         imu_bridge,

@@ -25,9 +25,6 @@ namespace go2_actuator
         , tau(12)
         , qr(12)
         , dqr(12)
-        , sample_time(0)
-        , elapsed_time(0)
-        , last_update_time_(0)
     { }
 
     controller_interface::CallbackReturn Go2Actuator::on_init()
@@ -40,7 +37,6 @@ namespace go2_actuator
 
             auto_declare<double>("gain.Kp", 60.0);
             auto_declare<double>("gain.Kd", 5.0);
-            auto_declare<double>("up_rate", 250.0);
             auto_declare<std::vector<double>>("joints_references", {});
         }
         catch (const std::exception &e)
@@ -158,8 +154,6 @@ namespace go2_actuator
         // Gains update //
         // Kp_gain = get_node()->get_parameter("gain.Kp").get_value<double>();
         // Kd_gain = get_node()->get_parameter("gain.Kd").get_value<double>();
-        auto _update_rate = get_node()->get_parameter("up_rate").get_value<double>();
-        sample_time = 1.0 / _update_rate;
 
         std::vector<double> joints_references = get_node()->get_parameter("joints_references").get_value<std::vector<double>>();
 
@@ -256,31 +250,20 @@ namespace go2_actuator
     }
 
     controller_interface::return_type Go2Actuator::update(
-        const rclcpp::Time &time, const rclcpp::Duration & /*period*/)
+        const rclcpp::Time &/*time*/, const rclcpp::Duration & /*period*/)
     {
-        if (last_update_time_ == 0)
-            last_update_time_ = time.nanoseconds();
-
-        // Compute time difference since last update
-        elapsed_time = (time.nanoseconds() - last_update_time_) * 1e-9; // Convert ns to seconds
-
-        // const auto logger = get_node()->get_logger();
-        if (elapsed_time >= sample_time) // Run every 4ms (250Hz)
+        std::lock_guard<std::mutex> lock(this->mutex_actuator);
+        
+        for (auto index{0}; index < 12; index++)
         {
-            std::lock_guard<std::mutex> lock(this->mutex_actuator);
-            
-            for (auto index{0}; index < 12; index++)
-            {
-                auto effort = kp[index] * (qr[index] - q[index]) + kd[index] * (dqr[index] - dq[index]) + tau[index];
+            auto effort = kp[index] * (qr[index] - q[index]) + kd[index] * (dqr[index] - dq[index]) + tau[index];
 
-                if (std::isfinite(effort))
-                    (void)joint_command_interface_[0][index].get().set_value(effort);
-                else
-                    (void)joint_command_interface_[0][index].get().set_value(0.0);
-            }
-
-            last_update_time_ = time.nanoseconds(); // Reset timer
+            if (std::isfinite(effort))
+                (void)joint_command_interface_[0][index].get().set_value(effort);
+            else
+                (void)joint_command_interface_[0][index].get().set_value(0.0);
         }
+
         return controller_interface::return_type::OK;
     }
 

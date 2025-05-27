@@ -13,6 +13,8 @@ controller_manager:
 
 go2_actuator:
   ros__parameters:
+    update_rate: 1000
+
     joints:
       - FR_hip_joint
       - FR_thigh_joint
@@ -39,14 +41,13 @@ go2_actuator:
       Kp: 60.0
       Kd: 5.0
 
-    up_rate: 1000.0
-          
     joints_references: [ 0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65]
 
 go2_lowstates:
   ros__parameters:
-    joints:
-     
+    update_rate: 1000
+    
+    joints:     
       - FR_hip_joint
       - FR_thigh_joint
       - FR_calf_joint
@@ -59,47 +60,35 @@ go2_lowstates:
       - RR_hip_joint
       - RR_thigh_joint
       - RR_calf_joint
-
 
     state_interfaces:
       - position
       - velocity
 
-    up_rate: 1000.0
-
 go2_jointcontroller:
   ros__parameters:
+    update_rate: 200
+
+    control_mode: 1
+    
     joints:
-
-      - FR_hip_joint
-      - FR_thigh_joint
-      - FR_calf_joint
-      - FL_hip_joint
-      - FL_thigh_joint
-      - FL_calf_joint
-      - RL_hip_joint
-      - RL_thigh_joint
-      - RL_calf_joint
-      - RR_hip_joint
-      - RR_thigh_joint
-      - RR_calf_joint
-
-    up_rate: 250.0
+      names:
+        - FR_hip_joint
+        - FR_thigh_joint
+        - FR_calf_joint
+        - FL_hip_joint
+        - FL_thigh_joint
+        - FL_calf_joint
+        - RL_hip_joint
+        - RL_thigh_joint
+        - RL_calf_joint
+        - RR_hip_joint
+        - RR_thigh_joint
+        - RR_calf_joint
+      
+      initpos: [2.0, 1.50, -2.65, 0.0, 1.50, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65]
 
     gain:
       PD:
         Kp: [50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
         Kd: [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
-
-      # - FR_hip_joint
-      # - FR_thigh_joint
-      # - FR_calf_joint
-      # - FL_hip_joint
-      # - FL_thigh_joint
-      # - FL_calf_joint
-      # - RL_hip_joint
-      # - RL_thigh_joint
-      # - RL_calf_joint
-      # - RR_hip_joint
-      # - RR_thigh_joint
-      # - RR_calf_joint

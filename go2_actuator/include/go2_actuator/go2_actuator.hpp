@@ -93,9 +93,7 @@ namespace go2_actuator
 
     //     float _startPos[12] = {0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
 
-        double sample_time;
-        double elapsed_time;
-        double last_update_time_;
+
     };
 
 }
