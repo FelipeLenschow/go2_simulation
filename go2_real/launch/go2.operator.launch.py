@@ -8,6 +8,31 @@ from launch_ros.parameter_descriptions import ParameterValue
 
 def generate_launch_description():
 
+    # Get URDF via xacro
+    robot_description_content = Command(
+        [
+            PathJoinSubstitution([FindExecutable(name="xacro")]),
+            " ",
+            PathJoinSubstitution(
+                [FindPackageShare("go2_description"), "urdf", "go2.xacro.urdf"]
+            ),
+        ]
+    )
+    robot_description = {"robot_description": robot_description_content}
+
+    # Path to controller configurations
+    controllers_yaml = PathJoinSubstitution(
+        [FindPackageShare("go2_description"), "config", "go2_real.yaml"]
+    )
+
+    # Define the robot_state_publisher node
+    robot_state_pub_node = Node(
+        package="robot_state_publisher",
+        executable="robot_state_publisher",
+        output="both",
+        parameters=[robot_description],
+    )
+
     # Define RViz Node
     rviz_config_path = PathJoinSubstitution(
         [FindPackageShare("go2_description"), "rviz", "go2.rviz"]
@@ -25,8 +50,24 @@ def generate_launch_description():
         }]
     )
 
+    # Define go2_remap node
+    go2_remap_node = Node(
+        package="go2_remap",
+        executable="go2_remap",
+        output="screen",
+    )
+
+    go2_remap_cloud_node = Node(
+        package="go2_remap",
+        executable="go2_remap_cloud",
+        output="screen",
+    )
+
     return LaunchDescription(
         [
-            rviz_node
+            robot_state_pub_node,
+            go2_remap_node,
+            go2_remap_cloud_node,
+            rviz_node,
         ]
     )

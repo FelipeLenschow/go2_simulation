@@ -17,13 +17,13 @@ public:
 
         // Inicializa posições
         float startPos[12]   = {0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65}; //fold
-        float targetPos1[12] = {0.1, 1.30, -1.36, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65}; //FL extend
-        float targetPos2[12] = {0.1, 1.30, -1.36, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.1, 1.30, -1.36}; //FL and RR extend 
+        float targetPos1[12] = {1.1, 1.30, -1.36, 0.0, 1.50, -2.65, 1.1, 1.50, -2.65, 0.0, 1.50, -2.65}; //FL extend
+        // float targetPos2[12] = {0.1, 1.30, -1.36, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.1, 1.30, -1.36}; //FL and RR extend 
 
         std::copy(std::begin(startPos), std::end(startPos), sequence[0]);
         std::copy(std::begin(targetPos1), std::end(targetPos1), sequence[1]);
-        std::copy(std::begin(startPos), std::end(startPos), sequence[2]);
-        std::copy(std::begin(targetPos2), std::end(targetPos2), sequence[3]);
+        // std::copy(std::begin(startPos), std::end(startPos), sequence[2]);
+        // std::copy(std::begin(targetPos2), std::end(targetPos2), sequence[3]);
         
         std::copy(std::begin(sequence[0]), std::end(sequence[0]), _startPos);
         std::copy(std::begin(sequence[1]), std::end(sequence[1]), _desPos);
@@ -113,14 +113,14 @@ private:
     int motion_time, rate_count, pause_counter;
     bool paused = false;
     int current_step;
-    static const int sequence_size = 4;
+    static const int sequence_size = 2;
     static const int pause_duration = 20; // número de ciclos de 100ms para pausar (2s)
 
     float _startPos[12];
     float _desPos[12];
     float sequence[sequence_size][12];
 
-    uint32_t mode = 2;
+    uint32_t mode = 1;
 };
 
 int main(int argc, char *argv[])
