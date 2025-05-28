@@ -22,8 +22,8 @@ public:
 
         std::copy(std::begin(startPos), std::end(startPos), sequence[0]);
         std::copy(std::begin(targetPos1), std::end(targetPos1), sequence[1]);
-        // std::copy(std::begin(startPos), std::end(startPos), sequence[2]);
-        // std::copy(std::begin(targetPos2), std::end(targetPos2), sequence[3]);
+        std::copy(std::begin(startPos), std::end(startPos), sequence[2]);
+        std::copy(std::begin(targetPos2), std::end(targetPos2), sequence[3]);
         
         std::copy(std::begin(sequence[0]), std::end(sequence[0]), _startPos);
         std::copy(std::begin(sequence[1]), std::end(sequence[1]), _desPos);
