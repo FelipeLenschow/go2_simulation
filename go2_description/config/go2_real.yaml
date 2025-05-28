@@ -1,10 +1,6 @@
 controller_manager:
   ros__parameters:
-<<<<<<< HEAD
-    update_rate: 200  # Hz
-=======
     update_rate: 500  # Hz
->>>>>>> 0890e2edc7736aa2409894d1b69c351bab072d82
 
     go2_lowstates:
       type: go2_lowstates/Go2Lowstates
