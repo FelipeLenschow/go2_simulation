@@ -135,17 +135,6 @@ namespace go2_lowstates
                 lowStates_msg.imu_state.rpy[2] = yaw;
             });
 
-        // effort_subscriber_ = get_node()->create_subscription<effortstates>(
-        //     "/go2_controller/LowCommands", rclcpp::SystemDefaultsQoS(),
-        //     [this](const std::shared_ptr<effortstates> msg) -> void
-        //     {
-        //         std::lock_guard<std::mutex> lock(this->mutex_controller);
-        //         for (auto index{0}; index < 12; index++)
-        //         {
-        //             tau[index] = msg->data[index];
-        //         }
-        //     });
-
         go2_lowstates_publisher = get_node()->create_publisher<lowStates>("/lowstate", 10);
         return CallbackReturn::SUCCESS;
     }

@@ -79,6 +79,8 @@ namespace go2_jointcontroller
 
         void computeTauG();
 
+        void selectControlMode(int mode);
+
         std::vector<int> map_desired_to_pinocchio;
 
         // std::vector<int> map_desired_to_pinocchio(const std::vector<std::string> &desired_order,
@@ -139,16 +141,9 @@ namespace go2_jointcontroller
         Eigen::VectorXd gravidade;
         Eigen::VectorXd q;
         Eigen::VectorXd dq;
-        std::vector<double> pd_kp;
-        std::vector<double> pd_kd;
-        std::vector<double> pdg_kp;
-        std::vector<double> pdg_kd;
-        std::vector<double> pid_kp;
-        std::vector<double> pid_kd;
-        std::vector<double> pid_ki;
-        std::vector<double> pidg_kp;
-        std::vector<double> pidg_kd;
-        std::vector<double> pidg_ki;
+        std::vector<double> kp;
+        std::vector<double> kd;
+        std::vector<double> ki;
         Eigen::VectorXd tau;
         Eigen::VectorXd tauG;
         Eigen::VectorXd tauG_total;

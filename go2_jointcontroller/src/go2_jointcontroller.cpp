@@ -28,16 +28,9 @@ namespace go2_jointcontroller
         , gravidade(3)
         , q(12)
         , dq(12)
-        , pd_kp(12)
-        , pd_kd(12)
-        , pdg_kp(12)
-        , pdg_kd(12)
-        , pid_kp(12)
-        , pid_kd(12)
-        , pid_ki(12)
-        , pidg_kp(12)
-        , pidg_kd(12)
-        , pidg_ki(12)
+        , kp(12)
+        , kd(12)
+        , ki(12)
         , tau(12)
         , tauG(12)
         , tau_(12)
@@ -116,16 +109,18 @@ namespace go2_jointcontroller
         {
             auto_declare<std::vector<std::string>>("joints.names", joint_names_);
             auto_declare<std::vector<double>>("joints.initpos", _targetPos);
-            auto_declare<std::vector<double>>("gain.PD.Kp", pd_kp);
-            auto_declare<std::vector<double>>("gain.PD.Kd", pd_kd);
-            auto_declare<std::vector<double>>("gain.PDG.Kp", pdg_kp);
-            auto_declare<std::vector<double>>("gain.PDG.Kd", pdg_kd);
-            auto_declare<std::vector<double>>("gain.PID.Kp", pid_kp);
-            auto_declare<std::vector<double>>("gain.PID.Kd", pid_kd);
-            auto_declare<std::vector<double>>("gain.PID.Ki", pid_ki);
-            auto_declare<std::vector<double>>("gain.PIDG.Kp", pidg_kp);
-            auto_declare<std::vector<double>>("gain.PIDG.Kd", pidg_kd);
-            auto_declare<std::vector<double>>("gain.PIDG.Ki", pidg_ki);
+
+            std::vector<double> zeros(12, 0.0);
+            auto_declare<std::vector<double>>("gain.PD.Kp", zeros);
+            auto_declare<std::vector<double>>("gain.PD.Kd", zeros);
+            auto_declare<std::vector<double>>("gain.PDG.Kp", zeros);
+            auto_declare<std::vector<double>>("gain.PDG.Kd", zeros);
+            auto_declare<std::vector<double>>("gain.PID.Kp", zeros);
+            auto_declare<std::vector<double>>("gain.PID.Kd", zeros);
+            auto_declare<std::vector<double>>("gain.PID.Ki", zeros);
+            auto_declare<std::vector<double>>("gain.PIDG.Kp", zeros);
+            auto_declare<std::vector<double>>("gain.PIDG.Kd", zeros);
+            auto_declare<std::vector<double>>("gain.PIDG.Ki", zeros);
             auto_declare<int>("control_mode", control_mode);
             
             auto_declare<int>("update_rate", update_rate);
@@ -172,19 +167,11 @@ namespace go2_jointcontroller
             return CallbackReturn::FAILURE;
         }
 
-        pd_kp = get_node()->get_parameter("gain.PD.Kp").get_value<std::vector<double>>();
-        pd_kd = get_node()->get_parameter("gain.PD.Kd").get_value<std::vector<double>>();
-        pdg_kp = get_node()->get_parameter("gain.PDG.Kp").get_value<std::vector<double>>();
-        pdg_kd = get_node()->get_parameter("gain.PDG.Kd").get_value<std::vector<double>>();
-        pid_kp = get_node()->get_parameter("gain.PID.Kp").get_value<std::vector<double>>();
-        pid_kd = get_node()->get_parameter("gain.PID.Kd").get_value<std::vector<double>>();
-        pid_ki = get_node()->get_parameter("gain.PID.Ki").get_value<std::vector<double>>();
-        pidg_kp = get_node()->get_parameter("gain.PIDG.Kp").get_value<std::vector<double>>();
-        pidg_kd = get_node()->get_parameter("gain.PIDG.Kd").get_value<std::vector<double>>();
-        pidg_ki = get_node()->get_parameter("gain.PIDG.Ki").get_value<std::vector<double>>();
+        control_mode = get_node()->get_parameter("control_mode").get_value<int>();
+
+        selectControlMode(control_mode);
 
         update_rate = get_node()->get_parameter("update_rate").get_value<int>();
-        control_mode = get_node()->get_parameter("control_mode").get_value<int>();
 
         for (size_t i = 0; i < 12; i++)
         {
@@ -242,6 +229,40 @@ namespace go2_jointcontroller
         return CallbackReturn::SUCCESS;
     }
 
+    void Go2JointController::selectControlMode(int mode)
+    {
+        if(mode == 1)
+        {
+            kp = get_node()->get_parameter("gain.PD.Kp").get_value<std::vector<double>>();
+            kd = get_node()->get_parameter("gain.PD.Kd").get_value<std::vector<double>>();
+            ki = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        }
+        else if(mode == 2)
+        {
+            kp = get_node()->get_parameter("gain.PDG.Kp").get_value<std::vector<double>>();
+            kd = get_node()->get_parameter("gain.PDG.Kd").get_value<std::vector<double>>();
+            ki = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        }
+        else if(mode == 3)
+        {
+            kp = get_node()->get_parameter("gain.PID.Kp").get_value<std::vector<double>>();
+            kd = get_node()->get_parameter("gain.PID.Kd").get_value<std::vector<double>>();
+            ki = get_node()->get_parameter("gain.PID.Ki").get_value<std::vector<double>>();
+        }
+        else if(mode == 4)
+        {
+            kp = get_node()->get_parameter("gain.PIDG.Kp").get_value<std::vector<double>>();
+            kd = get_node()->get_parameter("gain.PIDG.Kd").get_value<std::vector<double>>();
+            ki = get_node()->get_parameter("gain.PIDG.Ki").get_value<std::vector<double>>();
+        }
+        else
+        {
+            kd = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+            kp = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+            ki = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        }
+    }
+
     controller_interface::CallbackReturn Go2JointController::on_activate(const rclcpp_lifecycle::State &)
     {
         RCLCPP_INFO(get_node()->get_logger(), "Activating Go2JointController...");
@@ -289,9 +310,9 @@ namespace go2_jointcontroller
                     for (int j = 0; j < 12; j++)
                     {
                         lowCmd_msg.motor_cmd[j].q = (1 - _percent) * _startPos[j] + _percent * _targetPos[j];
-                        lowCmd_msg.motor_cmd[j].dq = 0;
-                        lowCmd_msg.motor_cmd[j].kp = pd_kp[j];
-                        lowCmd_msg.motor_cmd[j].kd = pd_kd[j];
+                        lowCmd_msg.motor_cmd[j].dq = 0.0;
+                        lowCmd_msg.motor_cmd[j].kp = 50.0;
+                        lowCmd_msg.motor_cmd[j].kd = 0.7;
                         lowCmd_msg.motor_cmd[j].tau = 0;
                     }
                 }
@@ -302,25 +323,19 @@ namespace go2_jointcontroller
             }
             else
             {
+                commanded_effort = computePID();
                 switch (control_mode)
                 {
                     case 1: // PD only
-                        commanded_effort = computePD();
+                    case 3: // PID
                         tauG = Eigen::VectorXd::Zero(12);
                         break;
 
                     case 2: // PD + Gravity Compensation
-                        commanded_effort = computePD_COMPG();
                         computeTotalGravityCompensation();
                         break;
 
-                    case 3: // PID
-                        commanded_effort = computePID();
-                        tauG = Eigen::VectorXd::Zero(12);
-                        break;
-
                     case 4: // PID + Gravity Compensation
-                        commanded_effort = computePID_COMPG();
                         computeTotalGravityCompensation();
                         break;
 
@@ -468,34 +483,6 @@ namespace go2_jointcontroller
         computeG12();
     }
 
-    Eigen::VectorXd Go2JointController::computePD()
-    {
-        Eigen::VectorXd effort(12);
-
-        for (auto index{0}; index < 12; index++)
-        {
-            q_e[index] = qr[index] - q[index];
-            dq_e[index] = dqr[index] - dq[index];
-            effort[index] = pd_kp[index] * q_e[index] + pd_kd[index] * dq_e[index];
-        }
-
-        return effort;
-    }
-
-    Eigen::VectorXd Go2JointController::computePD_COMPG()
-    {
-        Eigen::VectorXd effort(12);
-
-        for (auto index{0}; index < 12; index++)
-        {
-            q_e[index] = qr[index] - q[index];
-            dq_e[index] = dqr[index] - dq[index];
-            effort[index] = pdg_kp[index] * q_e[index] + pdg_kd[index] * dq_e[index];
-        }
-
-        return effort;
-    }
-
     Eigen::VectorXd Go2JointController::computePID()
     {
         Eigen::VectorXd effort(12);
@@ -506,23 +493,7 @@ namespace go2_jointcontroller
             dq_e[index] = dqr[index] - dq[index];
             qi_e[index] += (q_e[index] / update_rate);
 
-            effort[index] = pid_kp[index] * q_e[index] + pid_kd[index] * dq_e[index] + pid_ki[index] * qi_e[index];
-        }
-
-        return effort;
-    }
-
-    Eigen::VectorXd Go2JointController::computePID_COMPG()
-    {
-        Eigen::VectorXd effort(12);
-
-        for (auto index{0}; index < 12; index++)
-        {
-            q_e[index] = qr[index] - q[index];
-            dq_e[index] = dqr[index] - dq[index];
-            qi_e[index] += (q_e[index] / update_rate);
-
-            effort[index] = pidg_kp[index] * q_e[index] + pidg_kd[index] * dq_e[index] + pidg_ki[index] * qi_e[index];
+            effort[index] = kp[index] * q_e[index] + kd[index] * dq_e[index] + ki[index] * qi_e[index];
         }
 
         return effort;
