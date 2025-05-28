@@ -32,13 +32,15 @@ private:
         "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
         "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
         "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint",
-        "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint"};
+        "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint"
+    };        
 
     const std::vector<std::string> collision_links_ = {
         "FR_calflower", "FR_calflower1",
-        "FL_calflower", "FL_calflower1",
-        "RR_calflower", "RR_calflower1",
-        "RL_calflower", "RL_calflower1"};
+        "FL_calflower", "FL_calflower1",   
+        "RR_calflower", "RR_calflower1",     
+        "RL_calflower", "RL_calflower1"
+    };        
 };
 
 #endif // GO2_REMAP_HPP

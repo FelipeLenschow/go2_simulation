@@ -40,7 +40,7 @@ def generate_launch_description():
         PathJoinSubstitution([
             FindPackageShare("go2_description"),
             "urdf",
-            "go2.xacro.urdf"
+            "go2.xacro"
         ]),
         " ",
         "simulation:=", simulation,
