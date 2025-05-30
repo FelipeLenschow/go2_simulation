@@ -61,30 +61,16 @@ namespace go2_jointcontroller
         controller_interface::CallbackReturn on_deactivate(
             const rclcpp_lifecycle::State &previous_state) override;
 
-        void computeG();
 
-        void computeG12();
+        Eigen::VectorXd computeG0(Eigen::VectorXd q);
 
-        void computeG0();
-
-        Eigen::VectorXd computePD();
-
-        Eigen::VectorXd computePD_COMPG();
-
-        void computeTotalGravityCompensation();
+        Eigen::VectorXd computeTotalGravityCompensation(Eigen::VectorXd q);
 
         Eigen::VectorXd computePID();
-
-        Eigen::VectorXd computePID_COMPG();
-
-        void computeTauG();
 
         void selectControlMode(int mode);
 
         std::vector<int> map_desired_to_pinocchio;
-
-        // std::vector<int> map_desired_to_pinocchio(const std::vector<std::string> &desired_order,
-        //                                           const std::vector<std::string> &pinocchio_order);
 
         // Reordena um vetor da ordem desejada para a ordem do Pinocchio
         Eigen::VectorXd reorder_to_pinocchio(const Eigen::VectorXd &vec_desired);
@@ -139,38 +125,20 @@ namespace go2_jointcontroller
         std::shared_ptr<pinocchio::Data> data;
 
         Eigen::VectorXd gravidade;
-        Eigen::VectorXd q;
-        Eigen::VectorXd dq;
+        Eigen::VectorXd _q;
+        Eigen::VectorXd _qd;
         std::vector<double> kp;
         std::vector<double> kd;
         std::vector<double> ki;
-        Eigen::VectorXd tau;
         Eigen::VectorXd tauG;
-        Eigen::VectorXd tauG_total;
-        Eigen::VectorXd tauG_local;
-        Eigen::VectorXd tau_pinocchio;
-        Eigen::VectorXd torque_contrib;
 
-        Eigen::VectorXd tau_;
         Eigen::VectorXd q_e;
         Eigen::VectorXd qi_e;
         Eigen::VectorXd dq_e;
         Eigen::VectorXd qr;
         Eigen::VectorXd dqr;
         Eigen::VectorXd mass;
-        Eigen::VectorXd effort;
         Eigen::VectorXd commanded_effort;
-        Eigen::VectorXd vetor_pinocchio;
-        Eigen::VectorXd v;
-        Eigen::VectorXd a;
-        Eigen::MatrixXd J;
-        Eigen::MatrixXd J_linear;
-        Eigen::VectorXd tau_contrib;
-        Eigen::Vector3d F_grav;
-
-        Eigen::VectorXd q_pinocchio;
-        Eigen::VectorXd v_pinocchio;
-        Eigen::VectorXd a_pinocchio;
 
         int update_rate;
 
@@ -205,13 +173,14 @@ namespace go2_jointcontroller
             "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint",
             "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint"};
 
-        std::vector<pinocchio::FrameIndex> pinocchio_frames;
+        std::vector<pinocchio::JointIndex> pinocchio_frames;
 
         const std::vector<std::string> joint_names_sequence = {
-            "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
             "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
-            "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint",
-            "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint"};
+            "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
+            "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint",
+            "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint"
+        };
     };
 
 }

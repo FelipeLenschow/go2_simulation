@@ -64,7 +64,7 @@ go2_jointcontroller:
   ros__parameters:
     update_rate: 200
 
-    control_mode: 1
+    control_mode: 2
     
     joints:
       names:

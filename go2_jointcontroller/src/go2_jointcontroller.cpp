@@ -26,25 +26,19 @@ namespace go2_jointcontroller
         , joint_names_({})
         , model()
         , gravidade(3)
-        , q(12)
-        , dq(12)
+        , _q(12)
+        , _qd(12)
         , kp(12)
         , kd(12)
         , ki(12)
-        , tau(12)
         , tauG(12)
-        , tau_(12)
         , q_e(12)
         , qi_e(12)
         , dq_e(12)
         , qr(12)
         , dqr(12)
         , mass(12)
-        , effort(12)
         , commanded_effort(12)
-        , vetor_pinocchio(12)
-        , v(Eigen::VectorXd::Zero(12))
-        , a(Eigen::VectorXd::Zero(12))
         , update_rate(0)
         , _percent(0)
         , _duration(1000)
@@ -76,8 +70,8 @@ namespace go2_jointcontroller
 
         data = std::make_shared<pinocchio::Data>(model);
 
-        for (int i = 0; i < model.nq - 1; i++)
-            pinocchio_frames[i] = model.getFrameId(joint_names_sequence[i]);
+        for (int i = 0; i < 12; i++)
+            pinocchio_frames[i] = model.getJointId(joint_names_sequence[i]);
 
         for (const auto &joint_name : desired_order)
         {
@@ -173,11 +167,6 @@ namespace go2_jointcontroller
 
         update_rate = get_node()->get_parameter("update_rate").get_value<int>();
 
-        for (size_t i = 0; i < 12; i++)
-        {
-            tau[i] = 0.0;
-        }
-
         // TODO: use the name of topic from the YAML file
         lowstate_subscriber_ = get_node()->create_subscription<lowStates>(
             "/lowstate", rclcpp::SystemDefaultsQoS(),
@@ -187,8 +176,8 @@ namespace go2_jointcontroller
 
                 for (auto index{0}; index < 12; index++)
                 {
-                    q[index] = msg->motor_state[index].q;
-                    dq[index] = msg->motor_state[index].dq;
+                    _q[index] = msg->motor_state[index].q;
+                    _qd[index] = msg->motor_state[index].dq;
                 }
                 _lowTick = msg->tick;
             });
@@ -267,16 +256,12 @@ namespace go2_jointcontroller
     {
         RCLCPP_INFO(get_node()->get_logger(), "Activating Go2JointController...");
 
-        // Reset torques and errors
-        for (auto &t : tau)
-            t = 0.0;
-        
         // Wait for a valid reading from robot low states
         while(_lowTick == 0);
 
         for(int i=0; i<12; i++)
         {
-            _startPos[i] = q[i];
+            _startPos[i] = _q[i];
             qr[i] = _targetPos[i];
         }
 
@@ -286,10 +271,6 @@ namespace go2_jointcontroller
     controller_interface::CallbackReturn Go2JointController::on_deactivate(const rclcpp_lifecycle::State &)
     {
         RCLCPP_INFO(get_node()->get_logger(), "Deactivating Go2JointController...");
-
-        // Stop sending commands
-        for (auto &t : tau)
-            t = 0.0;
 
         return CallbackReturn::SUCCESS;
     }
@@ -332,11 +313,8 @@ namespace go2_jointcontroller
                         break;
 
                     case 2: // PD + Gravity Compensation
-                        computeTotalGravityCompensation();
-                        break;
-
                     case 4: // PID + Gravity Compensation
-                        computeTotalGravityCompensation();
+                        tauG = computeTotalGravityCompensation(_q);
                         break;
 
                     default:
@@ -361,7 +339,6 @@ namespace go2_jointcontroller
         }
         catch (const std::exception &e)
         {
-
             RCLCPP_ERROR(logger, "Exception in update(): %s", e.what());
             return controller_interface::return_type::ERROR;
         }
@@ -388,99 +365,103 @@ namespace go2_jointcontroller
         }
         return vec_desired;
     }
-    void Go2JointController::computeG12()
 
+    Eigen::VectorXd Go2JointController::computeG0(Eigen::VectorXd q)
     {
+        Eigen::VectorXd tau = Eigen::VectorXd::Zero(12);
 
-        // Supondo que qr, v, a estão na ordem desejada (FL, FR, RL, RR)
-
-        Eigen::VectorXd q_pinocchio = reorder_to_pinocchio(qr);
-
-        Eigen::VectorXd v_pinocchio = reorder_to_pinocchio(v);
-
-        Eigen::VectorXd a_pinocchio = reorder_to_pinocchio(a);
-
-        // Calcula torques na ordem do Pinocchio
-
-        Eigen::VectorXd tau_pinocchio = pinocchio::rnea(model, *data, q_pinocchio, v_pinocchio, a_pinocchio);
-
-        // Reordena para sua ordem desejada
-
-        Eigen::VectorXd tau_temp = reorder_to_desired(tau_pinocchio);
-
-        // Preenche apenas os índices 1, 2, 4, 5, 7, 8, 10 e 11
-
-        std::vector<int> indices_to_fill = {1, 2, 4, 5, 7, 8, 10, 11};
-
-        for (int i : indices_to_fill)
+        Eigen::VectorXd qcerto = Eigen::VectorXd::Zero(12);
+        for (int j = 0; j < 12; j++)
         {
-
-            if (i >= 0 && i < tauG.size() && i < tau_temp.size())
-            {
-
-                tauG[i] = tau_temp[i];
-            }
+            qcerto[j] = q[pinocchio_frames[j]-1];
         }
+
+        //Atualiza cinemática direta para garantir que frames estejam atualizados
+        pinocchio::forwardKinematics(model, *data, qcerto);
+
+        // for (int leg = 0; leg < 4; leg++)
+        // {
+        //     int shoulder_index = leg * 3; //Índice da junta de "ombro" (0, 3, 6, 9)
+
+        //     Eigen::VectorXd torque_total = Eigen::VectorXd::Zero(model.nv);
+
+        //     for (int e = 0; e < 3; e++)
+        //     {
+        //         int i = leg * 3 + e; //Índice global do elo
+
+        //         //Calcula jacobiano do frame do elo no mundo
+        //         Eigen::MatrixXd J(6, model.nv);
+
+        //         pinocchio::computeFrameJacobian(model, *data, qr, pinocchio_frames[i], pinocchio::WORLD, J);
+
+        //         //Parte linear do jacobiano
+        //         Eigen::MatrixXd J_linear = J.topRows(3);
+
+        //         //Força gravitacional no centro de massa
+        //         Eigen::Vector3d F_grav = mass[i] * gravidade;
+
+        //         //Torque gerado pela gravidade
+        //         Eigen::VectorXd torque_contrib_global = J_linear.transpose() * F_grav;
+
+        //         //Acumula toda a contribuição no vetor total
+        //         torque_total += torque_contrib_global;
+        //     }
+
+        //     //Após somar as contribuições de todos os elos da perna, aplica apenas na junta do ombro
+        //     tau[shoulder_index] += torque_total[shoulder_index];
+        // }
+
+        pinocchio::computeJointJacobians(model, *data, qcerto);
+
+        for (int j = 0; j < 12; j++)
+        {
+            
+            Eigen::MatrixXd J = pinocchio::getJointJacobian(model, *data, pinocchio_frames[j], pinocchio::WORLD);
+
+            //Parte linear do jacobiano
+            // Eigen::MatrixXd J_linear = J.topRows(3);
+
+        //     //Força gravitacional no centro de massa
+        //     // Eigen::Vector3d F_grav = mass[j] * gravidade;
+
+            //Torque gerado pela gravidade
+            tau += J.topRows(3).transpose() * mass[j] * gravidade;
+        }
+        
+        return tau;
     }
 
-    void Go2JointController::computeG0()
-    {
-
-        // Atualiza cinemática direta para garantir que frames estejam atualizados
-
-        pinocchio::forwardKinematics(model, *data, q);
-
-        for (int leg = 0; leg < 4; leg++)
-        {
-
-            int shoulder_index = leg * 3 + 0; // Índice da junta de "ombro" (0, 3, 6, 9)
-
-            Eigen::VectorXd torque_total = Eigen::VectorXd::Zero(model.nv);
-
-            for (int e = 0; e < 3; e++)
-            {
-
-                int i = leg * 3 + e; // Índice global do elo
-
-                // Calcula jacobiano do frame do elo no mundo
-
-                Eigen::MatrixXd J(6, model.nv);
-
-                pinocchio::computeFrameJacobian(model, *data, qr, pinocchio_frames[i], pinocchio::WORLD, J);
-
-                // Parte linear do jacobiano
-
-                Eigen::MatrixXd J_linear = J.topRows(3);
-
-                // Força gravitacional no centro de massa
-
-                Eigen::Vector3d F_grav = mass[i] * gravidade;
-
-                // Torque gerado pela gravidade
-
-                Eigen::VectorXd torque_contrib_global = J_linear.transpose() * F_grav;
-
-                // Acumula toda a contribuição no vetor total
-
-                torque_total += torque_contrib_global;
-            }
-
-            // Após somar as contribuições de todos os elos da perna, aplica apenas na junta do ombro
-
-            tauG[shoulder_index] += torque_total[shoulder_index];
-        }
-    }
-
-    void Go2JointController::computeTotalGravityCompensation()
+    Eigen::VectorXd Go2JointController::computeTotalGravityCompensation(Eigen::VectorXd q)
     {
         // Zera todo o vetor de torques antes de preencher
-        tauG = Eigen::VectorXd::Zero(12);
+        Eigen::VectorXd tau = Eigen::VectorXd::Zero(12);
 
         // Preenche os torques apenas nos índices 0, 3, 6 e 9
-        computeG0();
+        tau = computeG0(q);
 
-        // Preenche os torques apenas nos índices 1, 2, 4, 5, 7, 8, 10 e 11
-        computeG12();
+        // // Preenche os torques apenas nos índices 1, 2, 4, 5, 7, 8, 10 e 11
+        // // Supondo que qr, v, a estão na ordem desejada (FL, FR, RL, RR)
+        // Eigen::VectorXd q_pinocchio = reorder_to_pinocchio(qr);
+        // Eigen::VectorXd v_pinocchio = reorder_to_pinocchio(v);
+        // Eigen::VectorXd a_pinocchio = reorder_to_pinocchio(a);
+
+        // // Calcula torques na ordem do Pinocchio
+        // Eigen::VectorXd tau_pinocchio = pinocchio::rnea(model, *data, q_pinocchio, v_pinocchio, a_pinocchio);
+
+        // // Reordena para sua ordem desejada
+        // Eigen::VectorXd tau_temp = reorder_to_desired(tau_pinocchio);
+
+        // // Preenche apenas os índices 1, 2, 4, 5, 7, 8, 10 e 11
+        // std::vector<int> indices_to_fill = {1, 2, 4, 5, 7, 8, 10, 11};
+
+        // for (int i : indices_to_fill)
+        // {
+        //     if (i >= 0 && i < tauG.size() && i < tau_temp.size())
+        //     {
+        //         tau[i] = tau_temp[i];
+        //     }
+        // }
+        return tau;
     }
 
     Eigen::VectorXd Go2JointController::computePID()
@@ -489,8 +470,8 @@ namespace go2_jointcontroller
 
         for (auto index{0}; index < 12; index++)
         {
-            q_e[index] = qr[index] - q[index];
-            dq_e[index] = dqr[index] - dq[index];
+            q_e[index] = qr[index] - _q[index];
+            dq_e[index] = dqr[index] - _qd[index];
             qi_e[index] += (q_e[index] / update_rate);
 
             effort[index] = kp[index] * q_e[index] + kd[index] * dq_e[index] + ki[index] * qi_e[index];
