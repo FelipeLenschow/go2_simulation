@@ -17,18 +17,18 @@ go2_actuator:
 
     joints:
       names:
-        - FR_hip_joint
-        - FR_thigh_joint
-        - FR_calf_joint
-        - FL_hip_joint
-        - FL_thigh_joint
-        - FL_calf_joint
-        - RR_hip_joint
-        - RR_thigh_joint
-        - RR_calf_joint
-        - RL_hip_joint
-        - RL_thigh_joint
-        - RL_calf_joint
+        - 1_FR_hip_joint
+        - 1_FR_thigh_joint
+        - 1_FR_calf_joint
+        - 2_FL_hip_joint
+        - 2_FL_thigh_joint
+        - 2_FL_calf_joint
+        - 3_RR_hip_joint
+        - 3_RR_thigh_joint
+        - 3_RR_calf_joint
+        - 4_RL_hip_joint
+        - 4_RL_thigh_joint
+        - 4_RL_calf_joint
 
     command_interfaces: 
       - effort
@@ -43,18 +43,18 @@ go2_lowstates:
     update_rate: 500
     
     joints:     
-      - FR_hip_joint
-      - FR_thigh_joint
-      - FR_calf_joint
-      - FL_hip_joint
-      - FL_thigh_joint
-      - FL_calf_joint
-      - RR_hip_joint
-      - RR_thigh_joint
-      - RR_calf_joint
-      - RL_hip_joint
-      - RL_thigh_joint
-      - RL_calf_joint
+      - 1_FR_hip_joint
+      - 1_FR_thigh_joint
+      - 1_FR_calf_joint
+      - 2_FL_hip_joint
+      - 2_FL_thigh_joint
+      - 2_FL_calf_joint
+      - 3_RR_hip_joint
+      - 3_RR_thigh_joint
+      - 3_RR_calf_joint
+      - 4_RL_hip_joint
+      - 4_RL_thigh_joint
+      - 4_RL_calf_joint
 
     state_interfaces:
       - position
@@ -68,18 +68,18 @@ go2_jointcontroller:
     
     joints:
       names:
-        - FR_hip_joint
-        - FR_thigh_joint
-        - FR_calf_joint
-        - FL_hip_joint
-        - FL_thigh_joint
-        - FL_calf_joint
-        - RR_hip_joint
-        - RR_thigh_joint
-        - RR_calf_joint
-        - RL_hip_joint
-        - RL_thigh_joint
-        - RL_calf_joint
+        - 1_FR_hip_joint
+        - 1_FR_thigh_joint
+        - 1_FR_calf_joint
+        - 2_FL_hip_joint
+        - 2_FL_thigh_joint
+        - 2_FL_calf_joint
+        - 3_RR_hip_joint
+        - 3_RR_thigh_joint
+        - 3_RR_calf_joint
+        - 4_RL_hip_joint
+        - 4_RL_thigh_joint
+        - 4_RL_calf_joint
       
       initpos: [0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65] # fold position
 

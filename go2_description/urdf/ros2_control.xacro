@@ -28,21 +28,21 @@
       </xacro:macro>
 
       <!-- Instantiate joint controls with specific effort limits -->
-      <xacro:joint_control joint_name="FL_hip_joint" effort_limit="${effort_limit_hip}"/>
-      <xacro:joint_control joint_name="FL_thigh_joint" effort_limit="${effort_limit_thigh}"/>
-      <xacro:joint_control joint_name="FL_calf_joint" effort_limit="${effort_limit_calf}"/>
+      <xacro:joint_control joint_name="2_FL_hip_joint" effort_limit="${effort_limit_hip}"/>
+      <xacro:joint_control joint_name="2_FL_thigh_joint" effort_limit="${effort_limit_thigh}"/>
+      <xacro:joint_control joint_name="2_FL_calf_joint" effort_limit="${effort_limit_calf}"/>
 
-      <xacro:joint_control joint_name="FR_hip_joint" effort_limit="${effort_limit_hip}"/>
-      <xacro:joint_control joint_name="FR_thigh_joint" effort_limit="${effort_limit_thigh}"/>
-      <xacro:joint_control joint_name="FR_calf_joint" effort_limit="${effort_limit_calf}"/>
+      <xacro:joint_control joint_name="1_FR_hip_joint" effort_limit="${effort_limit_hip}"/>
+      <xacro:joint_control joint_name="1_FR_thigh_joint" effort_limit="${effort_limit_thigh}"/>
+      <xacro:joint_control joint_name="1_FR_calf_joint" effort_limit="${effort_limit_calf}"/>
 
-      <xacro:joint_control joint_name="RL_hip_joint" effort_limit="${effort_limit_hip}"/>
-      <xacro:joint_control joint_name="RL_thigh_joint" effort_limit="${effort_limit_thigh}"/>
-      <xacro:joint_control joint_name="RL_calf_joint" effort_limit="${effort_limit_calf}"/>
+      <xacro:joint_control joint_name="4_RL_hip_joint" effort_limit="${effort_limit_hip}"/>
+      <xacro:joint_control joint_name="4_RL_thigh_joint" effort_limit="${effort_limit_thigh}"/>
+      <xacro:joint_control joint_name="4_RL_calf_joint" effort_limit="${effort_limit_calf}"/>
 
-      <xacro:joint_control joint_name="RR_hip_joint" effort_limit="${effort_limit_hip}"/>
-      <xacro:joint_control joint_name="RR_thigh_joint" effort_limit="${effort_limit_thigh}"/>
-      <xacro:joint_control joint_name="RR_calf_joint" effort_limit="${effort_limit_calf}"/>
+      <xacro:joint_control joint_name="3_RR_hip_joint" effort_limit="${effort_limit_hip}"/>
+      <xacro:joint_control joint_name="3_RR_thigh_joint" effort_limit="${effort_limit_thigh}"/>
+      <xacro:joint_control joint_name="3_RR_calf_joint" effort_limit="${effort_limit_calf}"/>
 
     </ros2_control>
   </xacro:macro>

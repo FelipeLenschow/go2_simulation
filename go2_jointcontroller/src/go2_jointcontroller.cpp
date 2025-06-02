@@ -70,24 +70,9 @@ namespace go2_jointcontroller
 
         data = std::make_shared<pinocchio::Data>(model);
 
-        for (int i = 0; i < 12; i++)
-            pinocchio_frames[i] = model.getJointId(joint_names_sequence[i]);
+        // for (int i = 0; i < 12; i++)
+        //     pinocchio_frames[i] = model.getJointId(joint_names_sequence[i]);
 
-        for (const auto &joint_name : desired_order)
-        {
-            auto it = std::find(pinocchio_order.begin(), pinocchio_order.end(), joint_name);
-            if (it != pinocchio_order.end())
-            {
-                int idx = std::distance(pinocchio_order.begin(), it);
-                map_desired_to_pinocchio.push_back(idx);
-            }
-            else
-            {
-                std::cerr << "Joint name not found: " << joint_name << std::endl;
-                map_desired_to_pinocchio.push_back(-1); // erro
-            }
-        }
-        
         gravidade[0] = 0;
         gravidade[1] = 0;
         gravidade[2] = -9.80665;
@@ -368,13 +353,14 @@ namespace go2_jointcontroller
 
     Eigen::VectorXd Go2JointController::computeG0(Eigen::VectorXd q)
     {
-        Eigen::VectorXd tau = Eigen::VectorXd::Zero(12);
+        Eigen::VectorXd tau = Eigen::VectorXd::Zero(19);
 
-        Eigen::VectorXd qcerto = Eigen::VectorXd::Zero(12);
-        for (int j = 0; j < 12; j++)
-        {
-            qcerto[j] = q[pinocchio_frames[j]-1];
-        }
+        Eigen::VectorXd qcerto = Eigen::VectorXd::Zero(19);
+        
+        // for (int j = 0; j < 12; j++)
+        // {
+        //     qcerto[j] = q[pinocchio_frames[j]-1];
+        // }
 
         //Atualiza cinemática direta para garantir que frames estejam atualizados
         pinocchio::forwardKinematics(model, *data, qcerto);
@@ -411,22 +397,22 @@ namespace go2_jointcontroller
         //     tau[shoulder_index] += torque_total[shoulder_index];
         // }
 
-        pinocchio::computeJointJacobians(model, *data, qcerto);
+        // pinocchio::computeJointJacobians(model, *data, qcerto);
 
-        for (int j = 0; j < 12; j++)
-        {
+        // for (int j = 0; j < 12; j++)
+        // {
             
-            Eigen::MatrixXd J = pinocchio::getJointJacobian(model, *data, pinocchio_frames[j], pinocchio::WORLD);
+        //     Eigen::MatrixXd J = pinocchio::getJointJacobian(model, *data, pinocchio_frames[j], pinocchio::WORLD);
 
-            //Parte linear do jacobiano
-            // Eigen::MatrixXd J_linear = J.topRows(3);
+        //     //Parte linear do jacobiano
+        //     // Eigen::MatrixXd J_linear = J.topRows(3);
 
-        //     //Força gravitacional no centro de massa
-        //     // Eigen::Vector3d F_grav = mass[j] * gravidade;
+        // //     //Força gravitacional no centro de massa
+        // //     // Eigen::Vector3d F_grav = mass[j] * gravidade;
 
-            //Torque gerado pela gravidade
-            tau += J.topRows(3).transpose() * mass[j] * gravidade;
-        }
+        //     //Torque gerado pela gravidade
+        //     tau += J.topRows(3).transpose() * mass[j] * gravidade;
+        // }
         
         return tau;
     }

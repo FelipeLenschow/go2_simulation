@@ -18,12 +18,11 @@
 
   <!-- Instantiate the four legs -->
   
-    <xacro:leg name="FL" mirror="1"  mirror_dae="True"   front_hind="1"  front_hind_dae="True"  />
-    <xacro:leg name="FR" mirror="-1" mirror_dae="False"  front_hind="1"  front_hind_dae="True"  />
-    <xacro:leg name="RL" mirror="1"  mirror_dae="True"   front_hind="-1" front_hind_dae="False" />
-    <xacro:leg name="RR" mirror="-1" mirror_dae="False"  front_hind="-1" front_hind_dae="False" />
-
-
+    <xacro:leg name="1_FR" mirror="-1" mirror_dae="False"  front_hind="1"  front_hind_dae="True"  />
+    <xacro:leg name="2_FL" mirror="1"  mirror_dae="True"   front_hind="1"  front_hind_dae="True"  />
+    <xacro:leg name="3_RR" mirror="-1" mirror_dae="False"  front_hind="-1" front_hind_dae="False" />
+    <xacro:leg name="4_RL" mirror="1"  mirror_dae="True"   front_hind="-1" front_hind_dae="False" />
+    
   <!-- Include the sensors -->
   <xacro:include filename="$(find go2_description)/urdf/sensors.xacro"/>
   <xacro:sensors/>
