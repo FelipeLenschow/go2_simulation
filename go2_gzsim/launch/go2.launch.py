@@ -188,7 +188,7 @@ def generate_launch_description():
         gz_spawn_entity,
         spawn_then_actuator,
         joint_controller_then_remap,
-        lowstates_then_rviz,
+        # lowstates_then_rviz,
         imu_bridge,
         ros_gz_bridge,
     ])

@@ -1,19 +1,5 @@
 #include "go2_jointcontroller/go2_jointcontroller.hpp"
-#include <string>
-#include <vector>
 
-#include "lifecycle_msgs/msg/state.hpp"
-#include "rclcpp/logging.hpp"
-#include "rclcpp/parameter.hpp"
-#include "hardware_interface/types/hardware_interface_type_values.hpp"
-#include "rclcpp_lifecycle/lifecycle_node.hpp"
-#include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
-#include "rclcpp_lifecycle/state.hpp"
-#include <pinocchio/algorithm/center-of-mass.hpp>
-
-#include <pinocchio/parsers/urdf.hpp>
-#include <pinocchio/algorithm/model.hpp>
-#include <pinocchio/algorithm/jacobian.hpp>
 
 constexpr double PosStopF = (2.146E+9f);
 constexpr double VelStopF = (16000.0f);
@@ -23,22 +9,19 @@ namespace go2_jointcontroller
 
     Go2JointController::Go2JointController()
         : controller_interface::ControllerInterface()
-        , joint_names_({})
         , model()
-        , gravidade(3)
         , _q(12)
         , _qd(12)
+        , _tau(12)
+        , _effort(12)
         , kp(12)
         , kd(12)
         , ki(12)
-        , tauG(12)
         , q_e(12)
         , qi_e(12)
         , dq_e(12)
         , qr(12)
         , dqr(12)
-        , mass(12)
-        , commanded_effort(12)
         , update_rate(0)
         , _percent(0)
         , _duration(1000)
@@ -47,7 +30,6 @@ namespace go2_jointcontroller
         , _targetPos(12)
         , _lowTick(0)
         , control_mode(1)
-        , pinocchio_frames(12)
     {
         const auto package_share_path = ament_index_cpp::get_package_share_directory("go2_description");
         const auto xacro_path = std::filesystem::path(package_share_path) / "urdf" / "go2.xacro";
@@ -64,29 +46,18 @@ namespace go2_jointcontroller
         }
 
         std::cout << "Converted Xacro to URDF: " << urdf_path << std::endl;
-
+        
         // Create a set of Pinocchio models and data.
-        pinocchio::urdf::buildModel(urdf_path, model);
+        pinocchio::urdf::buildModel(urdf_path, pinocchio::JointModelFreeFlyer(), model);
 
+        model.gravity.linear(Eigen::Vector3d(0, 0, -9.8));
         data = std::make_shared<pinocchio::Data>(model);
-
-        // for (int i = 0; i < 12; i++)
-        //     pinocchio_frames[i] = model.getJointId(joint_names_sequence[i]);
-
-        gravidade[0] = 0;
-        gravidade[1] = 0;
-        gravidade[2] = -9.80665;
-
-        mass[9] = mass[6] = mass[3] = mass[0] = 0.678;
-        mass[10] = mass[7] = mass[4] = mass[1] = 1.152;
-        mass[11] = mass[8] = mass[5] = mass[2] = 0.154;
     }
 
     controller_interface::CallbackReturn Go2JointController::on_init()
     {
         try
         {
-            auto_declare<std::vector<std::string>>("joints.names", joint_names_);
             auto_declare<std::vector<double>>("joints.initpos", _targetPos);
 
             std::vector<double> zeros(12, 0.0);
@@ -130,14 +101,6 @@ namespace go2_jointcontroller
         const rclcpp_lifecycle::State &)
     {
         auto logger = get_node()->get_logger();
-
-        // Read parameters from ROS parameter server
-        joint_names_ = get_node()->get_parameter("joints.names").as_string_array();
-        if (joint_names_.empty())
-        {
-            RCLCPP_ERROR(logger, "No joint names found in parameters.");
-            return CallbackReturn::FAILURE;
-        }
 
         _targetPos = get_node()->get_parameter("joints.initpos").get_value<std::vector<double>>();
         if (_targetPos.size() != 12)
@@ -289,17 +252,17 @@ namespace go2_jointcontroller
             }
             else
             {
-                commanded_effort = computePID();
+                _effort = computePID();
                 switch (control_mode)
                 {
                     case 1: // PD only
                     case 3: // PID
-                        tauG = Eigen::VectorXd::Zero(12);
+                        _tau = Eigen::VectorXd::Zero(12);
                         break;
 
                     case 2: // PD + Gravity Compensation
                     case 4: // PID + Gravity Compensation
-                        tauG = computeTotalGravityCompensation(_q);
+                        _tau = computeTotalGravityCompensation(_q);
                         break;
 
                     default:
@@ -312,7 +275,7 @@ namespace go2_jointcontroller
                     lowCmd_msg.motor_cmd[j].dq = 0;
                     lowCmd_msg.motor_cmd[j].kp = 0;
                     lowCmd_msg.motor_cmd[j].kd = 0;
-                    lowCmd_msg.motor_cmd[j].tau = commanded_effort[j] + tauG[j];
+                    lowCmd_msg.motor_cmd[j].tau = _effort[j] + _tau[j];
                 }
             }
             
@@ -329,125 +292,20 @@ namespace go2_jointcontroller
         }
     }
 
-    // Função de reordenação de entrada
-    Eigen::VectorXd Go2JointController::reorder_to_pinocchio(const Eigen::VectorXd &vec_desired)
-    {
-        Eigen::VectorXd vec_pinocchio(vec_desired.size());
-        for (int i = 0; i < vec_desired.size(); ++i)
-        {
-            vec_pinocchio[map_desired_to_pinocchio[i]] = vec_desired[i];
-        }
-        return vec_pinocchio;
-    }
-
-    // Função de reordenação de saída
-    Eigen::VectorXd Go2JointController::reorder_to_desired(const Eigen::VectorXd &vec_pinocchio)
-    {
-        Eigen::VectorXd vec_desired(vec_pinocchio.size());
-        for (int i = 0; i < vec_pinocchio.size(); ++i)
-        {
-            vec_desired[i] = vec_pinocchio[map_desired_to_pinocchio[i]];
-        }
-        return vec_desired;
-    }
-
-    Eigen::VectorXd Go2JointController::computeG0(Eigen::VectorXd q)
-    {
-        Eigen::VectorXd tau = Eigen::VectorXd::Zero(19);
-
-        Eigen::VectorXd qcerto = Eigen::VectorXd::Zero(19);
-        
-        // for (int j = 0; j < 12; j++)
-        // {
-        //     qcerto[j] = q[pinocchio_frames[j]-1];
-        // }
-
-        //Atualiza cinemática direta para garantir que frames estejam atualizados
-        pinocchio::forwardKinematics(model, *data, qcerto);
-
-        // for (int leg = 0; leg < 4; leg++)
-        // {
-        //     int shoulder_index = leg * 3; //Índice da junta de "ombro" (0, 3, 6, 9)
-
-        //     Eigen::VectorXd torque_total = Eigen::VectorXd::Zero(model.nv);
-
-        //     for (int e = 0; e < 3; e++)
-        //     {
-        //         int i = leg * 3 + e; //Índice global do elo
-
-        //         //Calcula jacobiano do frame do elo no mundo
-        //         Eigen::MatrixXd J(6, model.nv);
-
-        //         pinocchio::computeFrameJacobian(model, *data, qr, pinocchio_frames[i], pinocchio::WORLD, J);
-
-        //         //Parte linear do jacobiano
-        //         Eigen::MatrixXd J_linear = J.topRows(3);
-
-        //         //Força gravitacional no centro de massa
-        //         Eigen::Vector3d F_grav = mass[i] * gravidade;
-
-        //         //Torque gerado pela gravidade
-        //         Eigen::VectorXd torque_contrib_global = J_linear.transpose() * F_grav;
-
-        //         //Acumula toda a contribuição no vetor total
-        //         torque_total += torque_contrib_global;
-        //     }
-
-        //     //Após somar as contribuições de todos os elos da perna, aplica apenas na junta do ombro
-        //     tau[shoulder_index] += torque_total[shoulder_index];
-        // }
-
-        // pinocchio::computeJointJacobians(model, *data, qcerto);
-
-        // for (int j = 0; j < 12; j++)
-        // {
-            
-        //     Eigen::MatrixXd J = pinocchio::getJointJacobian(model, *data, pinocchio_frames[j], pinocchio::WORLD);
-
-        //     //Parte linear do jacobiano
-        //     // Eigen::MatrixXd J_linear = J.topRows(3);
-
-        // //     //Força gravitacional no centro de massa
-        // //     // Eigen::Vector3d F_grav = mass[j] * gravidade;
-
-        //     //Torque gerado pela gravidade
-        //     tau += J.topRows(3).transpose() * mass[j] * gravidade;
-        // }
-        
-        return tau;
-    }
-
     Eigen::VectorXd Go2JointController::computeTotalGravityCompensation(Eigen::VectorXd q)
     {
-        // Zera todo o vetor de torques antes de preencher
-        Eigen::VectorXd tau = Eigen::VectorXd::Zero(12);
+        Eigen::VectorXd q_act = Eigen::VectorXd::Zero(19);
 
-        // Preenche os torques apenas nos índices 0, 3, 6 e 9
-        tau = computeG0(q);
+        q_act.segment(0, 6) = Eigen::VectorXd::Zero(6);
+        q_act.segment(7, 12) = q;
 
-        // // Preenche os torques apenas nos índices 1, 2, 4, 5, 7, 8, 10 e 11
-        // // Supondo que qr, v, a estão na ordem desejada (FL, FR, RL, RR)
-        // Eigen::VectorXd q_pinocchio = reorder_to_pinocchio(qr);
-        // Eigen::VectorXd v_pinocchio = reorder_to_pinocchio(v);
-        // Eigen::VectorXd a_pinocchio = reorder_to_pinocchio(a);
+        //Atualiza cinemática direta para garantir que frames estejam atualizados
+        pinocchio::forwardKinematics(model, *data, q_act);
 
-        // // Calcula torques na ordem do Pinocchio
-        // Eigen::VectorXd tau_pinocchio = pinocchio::rnea(model, *data, q_pinocchio, v_pinocchio, a_pinocchio);
+        //above function is the same of pinocchio::rnea(model, *data, qcerto, Eigen::VectorXd::Zero(model.nv), Eigen::VectorXd::Zero(model.nv));
+        pinocchio::computeGeneralizedGravity(model, *data, q_act);
 
-        // // Reordena para sua ordem desejada
-        // Eigen::VectorXd tau_temp = reorder_to_desired(tau_pinocchio);
-
-        // // Preenche apenas os índices 1, 2, 4, 5, 7, 8, 10 e 11
-        // std::vector<int> indices_to_fill = {1, 2, 4, 5, 7, 8, 10, 11};
-
-        // for (int i : indices_to_fill)
-        // {
-        //     if (i >= 0 && i < tauG.size() && i < tau_temp.size())
-        //     {
-        //         tau[i] = tau_temp[i];
-        //     }
-        // }
-        return tau;
+        return data->g.segment(6, 12);
     }
 
     Eigen::VectorXd Go2JointController::computePID()

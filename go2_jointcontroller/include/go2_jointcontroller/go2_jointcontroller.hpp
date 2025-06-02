@@ -1,27 +1,21 @@
 #ifndef GO2_JOINTCONTROLLER__GO2_JOINTCONTROLLER_HPP_
 #define GO2_JOINTCONTROLLER__GO2_JOINTCONTROLLER_HPP_
 
-#include "controller_interface/controller_interface.hpp"
-#include "controller_interface/helpers.hpp"
-#include "hardware_interface/types/hardware_interface_type_values.hpp"
-
-#include <rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp>
-#include <std_msgs/msg/float64_multi_array.hpp>
 #include <vector>
 #include <string>
 #include <mutex>
+#include <filesystem>
 
-#include "std_msgs/msg/float64_multi_array.hpp"
+#include "controller_interface/controller_interface.hpp"
 
 #include "unitree_go/msg/low_state.hpp"
 #include "unitree_go/msg/low_cmd.hpp"
 
-#include <filesystem>
-#include <pinocchio/algorithm/model.hpp>
-#include <pinocchio/algorithm/rnea.hpp>
+#include "pinocchio/multibody/model.hpp"
+#include "pinocchio/multibody/data.hpp"
 #include "pinocchio/parsers/urdf.hpp"
-#include <pinocchio/algorithm/jacobian.hpp>
-#include <pinocchio/algorithm/frames.hpp>
+#include "pinocchio/algorithm/rnea.hpp"
+#include "pinocchio/algorithm/kinematics.hpp"
 
 #include "ament_index_cpp/get_package_share_directory.hpp"
 
@@ -62,21 +56,11 @@ namespace go2_jointcontroller
             const rclcpp_lifecycle::State &previous_state) override;
 
 
-        Eigen::VectorXd computeG0(Eigen::VectorXd q);
-
         Eigen::VectorXd computeTotalGravityCompensation(Eigen::VectorXd q);
 
         Eigen::VectorXd computePID();
 
         void selectControlMode(int mode);
-
-        std::vector<int> map_desired_to_pinocchio;
-
-        // Reordena um vetor da ordem desejada para a ordem do Pinocchio
-        Eigen::VectorXd reorder_to_pinocchio(const Eigen::VectorXd &vec_desired);
-
-        // Reordena um vetor da ordem do Pinocchio para a ordem desejada
-        Eigen::VectorXd reorder_to_desired(const Eigen::VectorXd &vec_pinocchio);
 
         uint32_t crc32_core(uint32_t *ptr, uint32_t len);
         void get_crc(lowCmd& msg);
@@ -119,26 +103,23 @@ namespace go2_jointcontroller
         } LowCmd; 
 
     protected:
-        std::vector<std::string> joint_names_;
-
         pinocchio::Model model;
         std::shared_ptr<pinocchio::Data> data;
 
-        Eigen::VectorXd gravidade;
         Eigen::VectorXd _q;
         Eigen::VectorXd _qd;
+        Eigen::VectorXd _tau;
+        Eigen::VectorXd _effort;
+
         std::vector<double> kp;
         std::vector<double> kd;
         std::vector<double> ki;
-        Eigen::VectorXd tauG;
-
         Eigen::VectorXd q_e;
         Eigen::VectorXd qi_e;
         Eigen::VectorXd dq_e;
+
         Eigen::VectorXd qr;
         Eigen::VectorXd dqr;
-        Eigen::VectorXd mass;
-        Eigen::VectorXd commanded_effort;
 
         int update_rate;
 
@@ -159,28 +140,6 @@ namespace go2_jointcontroller
         uint32_t control_mode;
 
         std::mutex mutex_controller;
-
-        //////////////////////////////////////////////////////////
-        const std::vector<std::string> desired_order = {
-            "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
-            "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
-            "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint",
-            "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint"};
-
-        const std::vector<std::string> pinocchio_order = {
-            "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
-            "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
-            "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint",
-            "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint"};
-
-        std::vector<pinocchio::JointIndex> pinocchio_frames;
-
-        const std::vector<std::string> joint_names_sequence = {
-            "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
-            "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
-            "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint",
-            "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint"
-        };
     };
 
 }

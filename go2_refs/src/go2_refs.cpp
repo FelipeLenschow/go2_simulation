@@ -28,7 +28,7 @@ public:
         std::copy(std::begin(sequence[0]), std::end(sequence[0]), _startPos);
         std::copy(std::begin(sequence[1]), std::end(sequence[1]), _desPos);
 
-        timer_ = this->create_wall_timer(100ms, std::bind(&MinimalPublisher::publish_message, this));
+        timer_ = this->create_wall_timer(5ms, std::bind(&MinimalPublisher::publish_message, this));
     }
 
 private:
@@ -38,7 +38,7 @@ private:
         motion_time++;
 
         // Normalização do tempo para interpolação (0 a 1)
-        double rate = std::min(1.0, rate_count / 50.0);
+        double rate = std::min(1.0, rate_count / 1000.0);
         rate_count++;
 
         if (paused)
@@ -102,7 +102,7 @@ private:
 
     int current_step = 1;
     static const int sequence_size = 4;
-    static const int pause_duration = 20; // número de ciclos de 100ms para pausar (2s)
+    static const int pause_duration = 400; // número de ciclos de 5ms para pausar (2s)
 
     float _startPos[12];
     float _desPos[12];
