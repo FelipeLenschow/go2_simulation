@@ -1,8 +1,12 @@
 #include "go2_jointcontroller/go2_jointcontroller.hpp"
+#include <unitree/robot/channel/channel_publisher.hpp>
+#include <unitree/robot/channel/channel_subscriber.hpp>
 
+#include <string>
 
 constexpr double PosStopF = (2.146E+9f);
 constexpr double VelStopF = (16000.0f);
+using namespace unitree::robot;
 
 namespace go2_jointcontroller
 {
@@ -59,6 +63,8 @@ namespace go2_jointcontroller
         try
         {
             auto_declare<std::vector<double>>("joints.initpos", _targetPos);
+            auto_declare<std::string>("network_interface", "eth0");
+            auto_declare<bool>("simulation", false);
 
             std::vector<double> zeros(12, 0.0);
             auto_declare<std::vector<double>>("gain.PD.Kp", zeros);
@@ -163,20 +169,26 @@ namespace go2_jointcontroller
             lowCmd_msg.motor_cmd[i].tau = 0;
         }
 
-        /*init MotionSwitcherClient*/
-        msc.SetTimeout(10.0f); 
-        msc.Init();
-        /*Shut down motion control-related service*/
-        while(queryMotionStatus())
+        if(!get_node()->get_parameter("simulation").get_value<bool>())
         {
-            std::cout << "Try to deactivate the motion control-related service." << std::endl;
-            int32_t ret = msc.ReleaseMode(); 
-            if (ret == 0) {
-                std::cout << "ReleaseMode succeeded." << std::endl;
-            } else {
-                std::cout << "ReleaseMode failed. Error code: " << ret << std::endl;
+            ChannelFactory::Instance()->Init(0, get_node()->get_parameter("network_interface").get_value<std::string>());
+
+            MotionSwitcherClient msc;
+            /*init MotionSwitcherClient*/
+            msc.SetTimeout(10.0f); 
+            msc.Init();
+            /*Shut down motion control-related service*/
+            while(queryMotionStatus(msc))
+            {
+                std::cout << "Try to deactivate the motion control-related service." << std::endl;
+                int32_t ret = msc.ReleaseMode(); 
+                if (ret == 0) {
+                    std::cout << "ReleaseMode succeeded." << std::endl;
+                } else {
+                    std::cout << "ReleaseMode failed. Error code: " << ret << std::endl;
+                }
+                sleep(5);
             }
-            sleep(5);
         }
 
         return CallbackReturn::SUCCESS;
@@ -413,7 +425,7 @@ namespace go2_jointcontroller
         
     }
 
-    int Go2JointController::queryMotionStatus()
+    int Go2JointController::queryMotionStatus(MotionSwitcherClient& msc)
     {
         std::string robotForm,motionName;
         int motionStatus;
@@ -438,20 +450,20 @@ namespace go2_jointcontroller
     }
 
     std::string Go2JointController::queryServiceName(std::string form,std::string name)
-{
-    if(form == "0")
     {
-        if(name == "normal" ) return "sport_mode"; 
-        if(name == "ai" ) return "ai_sport"; 
-        if(name == "advanced" ) return "advanced_sport"; 
+        if(form == "0")
+        {
+            if(name == "normal" ) return "sport_mode"; 
+            if(name == "ai" ) return "ai_sport"; 
+            if(name == "advanced" ) return "advanced_sport"; 
+        }
+        else
+        {
+            if(name == "ai-w" ) return "wheeled_sport(go2W)"; 
+            if(name == "normal-w" ) return "wheeled_sport(b2W)";
+        }
+        return "";
     }
-    else
-    {
-        if(name == "ai-w" ) return "wheeled_sport(go2W)"; 
-        if(name == "normal-w" ) return "wheeled_sport(b2W)";
-    }
-    return "";
-}
 }
 
 

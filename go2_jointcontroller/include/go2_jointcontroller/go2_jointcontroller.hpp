@@ -145,9 +145,7 @@ namespace go2_jointcontroller
 
         std::mutex mutex_controller;
 
-        MotionSwitcherClient msc;
-
-        int queryMotionStatus();
+        int queryMotionStatus(MotionSwitcherClient& msc);
         std::string queryServiceName(std::string form,std::string name);
     };
 

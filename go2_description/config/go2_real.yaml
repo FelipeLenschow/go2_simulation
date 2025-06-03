@@ -13,6 +13,8 @@ go2_jointcontroller:
   ros__parameters:
     update_rate: 250
 
+    simulation: true
+    network_interface: eth0
     control_mode: 1
 
     joints:

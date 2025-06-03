@@ -7,7 +7,7 @@
   <maintainer email="beatriz.r231@edu.udesc.br">beatriz</maintainer>
   <license>TODO: License declaration</license>
 
- <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>controller_interface</depend>
   <depend>go2_interfaces</depend>
@@ -21,7 +21,7 @@
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
- <test_depend>controller_interface</test_depend>
+  <test_depend>controller_interface</test_depend>
   <test_depend>pluginlib</test_depend>
   <test_depend>rclcpp</test_depend>
   <test_depend>rclcpp_lifecycle</test_depend>
