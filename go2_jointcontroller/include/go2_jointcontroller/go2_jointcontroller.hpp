@@ -19,6 +19,10 @@
 
 #include "ament_index_cpp/get_package_share_directory.hpp"
 
+#include "unitree/robot/b2/motion_switcher/motion_switcher_client.hpp"
+
+using namespace unitree::robot::b2;
+
 namespace go2_jointcontroller
 {
     using lowCmd = unitree_go::msg::LowCmd;
@@ -140,6 +144,11 @@ namespace go2_jointcontroller
         uint32_t control_mode;
 
         std::mutex mutex_controller;
+
+        MotionSwitcherClient msc;
+
+        int queryMotionStatus();
+        std::string queryServiceName(std::string form,std::string name);
     };
 
 }
