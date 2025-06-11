@@ -154,13 +154,6 @@ def generate_launch_description():
         )
     )
 
-    lowstates_then_rviz = RegisterEventHandler(
-        event_handler=OnExecutionComplete(
-            target_action=go2_joint_controller,
-            on_completion=[rviz_node],
-        )
-    )
-
     # ───── Gazebo launch ─────
     gazebo_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
@@ -178,6 +171,13 @@ def generate_launch_description():
         }.items()
     )
 
+    # Define go2_remap node
+    go2_remap_node = Node(
+        package="go2_remap",
+        executable="go2_remap",
+        output="screen",
+    )
+
     # ───── Assemble description ─────
     return LaunchDescription([
         simulation_arg,
@@ -188,7 +188,8 @@ def generate_launch_description():
         gz_spawn_entity,
         spawn_then_actuator,
         joint_controller_then_remap,
-        # lowstates_then_rviz,
         imu_bridge,
         ros_gz_bridge,
+        go2_remap_node,
+        rviz_node,
     ])

@@ -163,8 +163,8 @@ namespace go2_jointcontroller
         {
             lowCmd_msg.motor_cmd[i].mode = 0x01;   // motor switch to servo (PMSM) mode
             lowCmd_msg.motor_cmd[i].q = PosStopF;
-            lowCmd_msg.motor_cmd[i].kp = 0;
             lowCmd_msg.motor_cmd[i].dq = VelStopF;
+            lowCmd_msg.motor_cmd[i].kp = 0;
             lowCmd_msg.motor_cmd[i].kd = 0;
             lowCmd_msg.motor_cmd[i].tau = 0;
         }
@@ -299,11 +299,12 @@ namespace go2_jointcontroller
                 }
                 for (int j = 0; j < 12; j++)
                 {
-                    lowCmd_msg.motor_cmd[j].q = 0;
-                    lowCmd_msg.motor_cmd[j].dq = 0;
+                    lowCmd_msg.motor_cmd[j].q = PosStopF;
+                    lowCmd_msg.motor_cmd[j].dq = VelStopF;
                     lowCmd_msg.motor_cmd[j].kp = 0;
                     lowCmd_msg.motor_cmd[j].kd = 0;
-                    lowCmd_msg.motor_cmd[j].tau = _effort[j] + _tau[j];
+                    lowCmd_msg.motor_cmd[j].tau = std::max(-5.0, std::min(5.0, _effort[j] + _tau[j]));
+                    
                 }
             }
             
