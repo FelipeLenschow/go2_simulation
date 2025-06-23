@@ -345,7 +345,7 @@ namespace go2_jointcontroller
         {
             q_e[index] = qr[index] - _q[index];
             dq_e[index] = dqr[index] - _qd[index];
-            qi_e[index] += (q_e[index] / update_rate);
+            qi_e[index] = std::max(-5.0, std::min(5.0, qi_e[index] + (q_e[index] / update_rate))); // I parcel with antiwindup
 
             effort[index] = kp[index] * q_e[index] + kd[index] * dq_e[index] + ki[index] * qi_e[index];
         }
