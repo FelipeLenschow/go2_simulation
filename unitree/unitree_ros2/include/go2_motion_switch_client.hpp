@@ -1,10 +1,10 @@
-// #pragma once
+#pragma once
 
 #include <cstdint>
 #include <future>
 #include <map>
 #include <memory>
-#include <rclcpp/node.hpp>
+#include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <rclcpp/qos.hpp>
 #include <string>
 
@@ -24,11 +24,11 @@ const int32_t MOTION_SWITCHER_API_ID_SET_SILENT = 1004;
 const int32_t MOTION_SWITCHER_API_ID_GET_SILENT = 1005;
 
 class MotionSwitchClient {
-  rclcpp::Node *node_;
+  rclcpp_lifecycle::LifecycleNode *node_;
   BaseClient base_client_;
 
  public:
-  explicit MotionSwitchClient(rclcpp::Node *node)
+  explicit MotionSwitchClient(rclcpp_lifecycle::LifecycleNode *node)
       : node_(node),
         base_client_(node_, "/api/motion_switcher/request", "/api/motion_switcher/response") {}
 

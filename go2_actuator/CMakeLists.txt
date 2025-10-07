@@ -5,6 +5,8 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+set(CMAKE_CXX_STANDARD 17)
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(controller_interface REQUIRED)
@@ -17,10 +19,6 @@ find_package(std_msgs REQUIRED)
 find_package(pinocchio REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(Eigen3 REQUIRED)
-
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
 
 add_library( ${PROJECT_NAME}
   SHARED
@@ -38,7 +36,11 @@ target_include_directories(${PROJECT_NAME}
     unitree_go
     std_msgs
 )
- 
+
+target_link_libraries(${PROJECT_NAME} 
+  pinocchio::pinocchio
+)
+
 ament_target_dependencies(${PROJECT_NAME}
   controller_interface
   pluginlib
@@ -49,33 +51,26 @@ ament_target_dependencies(${PROJECT_NAME}
   std_msgs
 )
 
-  pluginlib_export_plugin_description_file(controller_interface go2_actuator.xml)
+pluginlib_export_plugin_description_file(controller_interface go2_actuator.xml)
 
-  install( TARGETS ${PROJECT_NAME} DESTINATION
-   lib
-  )
+install(TARGETS ${PROJECT_NAME} DESTINATION lib)
+install (DIRECTORY include DESTINATION include/go2_actuator)
 
-  install (DIRECTORY include
-  DESTINATION include/go2_actuator
-   )
+ament_export_include_directories( 
+  include
+)
 
-   ament_export_include_directories(
-    include
-   )
-
-   ament_export_libraries (
-    go2_actuator
-   )
+ament_export_libraries (
+  go2_actuator
+)
    
-   ament_export_dependencies(
-    controller_interface
-    pluginlib
-    rclcpp
-    rclcpp_lifecycle
-    unitree_go
-   )
-
-  target_link_libraries(${PROJECT_NAME} pinocchio::pinocchio)
+ament_export_dependencies(
+  controller_interface
+  pluginlib
+  rclcpp
+  rclcpp_lifecycle
+  unitree_go
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

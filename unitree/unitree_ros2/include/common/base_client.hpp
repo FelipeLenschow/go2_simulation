@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <future>
-#include <rclcpp/rclcpp.hpp>
+#include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <utility>
 
 #include "nlohmann/json.hpp"
@@ -14,13 +14,13 @@ class BaseClient {
   using Request = unitree_api::msg::Request;
   using Response = unitree_api::msg::Response;
 
-  rclcpp::Node* node_;
+  rclcpp_lifecycle::LifecycleNode* node_;
   std::string topic_name_request_;
   std::string topic_name_response_;
   rclcpp::Publisher<Request>::SharedPtr req_puber_;
 
  public:
-  BaseClient(rclcpp::Node* node, const std::string& topic_name_request,
+  BaseClient(rclcpp_lifecycle::LifecycleNode* node, const std::string& topic_name_request,
              std::string topic_name_response)
       : node_(node),
         topic_name_request_(topic_name_request),

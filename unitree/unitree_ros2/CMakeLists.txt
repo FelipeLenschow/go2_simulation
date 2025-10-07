@@ -39,11 +39,8 @@ ament_target_dependencies(${PROJECT_NAME}
   rosbag2_cpp
 )
 
-# pluginlib_export_plugin_description_file(controller_interface go2_jointcontroller.xml)
-
 install(TARGETS ${PROJECT_NAME} DESTINATION lib)
 install(DIRECTORY include DESTINATION include/unitree_ros2)
-# install(FILES ${DDS_LIBRARIES} DESTINATION lib)
 
 ament_export_include_directories(
   include
@@ -54,11 +51,7 @@ ament_export_libraries (
 )
   
 ament_export_dependencies(
-  controller_interface
-  pluginlib
-  rclcpp
   rclcpp_lifecycle
-  go2_interfaces
 )
 
 if(BUILD_TESTING)

@@ -170,23 +170,23 @@ namespace go2_jointcontroller
         }
 
         if(!get_node()->get_parameter("simulation").get_value<bool>())
-            ms_client_ = std::make_shared<unitree::robot::go2::MotionSwitchClient>(this);
+            ms_client_ = std::make_shared<unitree::robot::go2::MotionSwitchClient>(this->get_node().get());
 
 
-        std::this_thread::sleep_for(1s);
+        sleep(1);
         
         while (queryMotionStatus() != 0) {
             std::cout << "Try to deactivate the motion control-related service." << std::endl;
-            int32_t ret = client_->ReleaseMode();
+            int32_t ret = ms_client_->ReleaseMode();
             if (ret == 0) {
                 std::cout << "ReleaseMode succeeded." << std::endl;
             } else {
                 std::cout << "ReleaseMode failed. Error code: " << ret << std::endl;
             }
-            std::this_thread::sleep_for(2s);
+            sleep(2);
         }
 
-        RCLCPP_INFO(this->get_logger(), "Go2 Node Initialized");
+        RCLCPP_INFO(this->get_node()->get_logger(), "Go2 Node Initialized");
 
         return CallbackReturn::SUCCESS;
     }
@@ -435,7 +435,7 @@ namespace go2_jointcontroller
         std::string motionName;
         int motionStatus = 0;
 
-        int32_t ret = client_->CheckMode(robotForm, motionName);
+        int32_t ret = ms_client_->CheckMode(robotForm, motionName);
         if (ret == 0) {
             std::cout << "CheckMode succeeded." << std::endl;
         } else {
