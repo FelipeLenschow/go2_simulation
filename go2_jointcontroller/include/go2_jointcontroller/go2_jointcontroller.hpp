@@ -19,9 +19,9 @@
 
 #include "ament_index_cpp/get_package_share_directory.hpp"
 
-#include "unitree/robot/b2/motion_switcher/motion_switcher_client.hpp"
+#include "unitree_ros2/include/go2_motion_switch_client.hpp"
 
-using namespace unitree::robot::b2;
+// using namespace unitree::robot::go2;
 
 namespace go2_jointcontroller
 {
@@ -145,8 +145,9 @@ namespace go2_jointcontroller
 
         std::mutex mutex_controller;
 
-        int queryMotionStatus(MotionSwitcherClient& msc);
-        std::string queryServiceName(std::string form,std::string name);
+        std::shared_ptr<unitree::robot::go2::MotionSwitchClient> ms_client_;
+        int queryMotionStatus();
+        std::string queryServiceName(std::string form, std::string name);
     };
 
 }

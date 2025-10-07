@@ -1,6 +1,6 @@
 #include "go2_jointcontroller/go2_jointcontroller.hpp"
-#include <unitree/robot/channel/channel_publisher.hpp>
-#include <unitree/robot/channel/channel_subscriber.hpp>
+// #include <unitree/robot/channel/channel_publisher.hpp>
+// #include <unitree/robot/channel/channel_subscriber.hpp>
 
 #include <string>
 
@@ -169,27 +169,24 @@ namespace go2_jointcontroller
             lowCmd_msg.motor_cmd[i].tau = 0;
         }
 
-        // if(!get_node()->get_parameter("simulation").get_value<bool>())
-        // {
-        //     ChannelFactory::Instance()->Init(0, get_node()->get_parameter("network_interface").get_value<std::string>());
+        if(!get_node()->get_parameter("simulation").get_value<bool>())
+            ms_client_ = std::make_shared<unitree::robot::go2::MotionSwitchClient>(this);
 
-        //     MotionSwitcherClient msc;
-        //     /*init MotionSwitcherClient*/
-        //     msc.SetTimeout(10.0f); 
-        //     msc.Init();
-        //     /*Shut down motion control-related service*/
-        //     while(queryMotionStatus(msc))
-        //     {
-        //         std::cout << "Try to deactivate the motion control-related service." << std::endl;
-        //         int32_t ret = msc.ReleaseMode(); 
-        //         if (ret == 0) {
-        //             std::cout << "ReleaseMode succeeded." << std::endl;
-        //         } else {
-        //             std::cout << "ReleaseMode failed. Error code: " << ret << std::endl;
-        //         }
-        //         sleep(5);
-        //     }
-        // }
+
+        std::this_thread::sleep_for(1s);
+        
+        while (queryMotionStatus() != 0) {
+            std::cout << "Try to deactivate the motion control-related service." << std::endl;
+            int32_t ret = client_->ReleaseMode();
+            if (ret == 0) {
+                std::cout << "ReleaseMode succeeded." << std::endl;
+            } else {
+                std::cout << "ReleaseMode failed. Error code: " << ret << std::endl;
+            }
+            std::this_thread::sleep_for(2s);
+        }
+
+        RCLCPP_INFO(this->get_logger(), "Go2 Node Initialized");
 
         return CallbackReturn::SUCCESS;
     }
@@ -429,42 +426,53 @@ namespace go2_jointcontroller
         
     }
 
-    int Go2JointController::queryMotionStatus(MotionSwitcherClient& msc)
+    int Go2JointController::queryMotionStatus()
     {
-        std::string robotForm,motionName;
-        int motionStatus;
-        int32_t ret = msc.CheckMode(robotForm,motionName);
+        if(get_node()->get_parameter("simulation").get_value<bool>())
+            return 0;
+
+        std::string robotForm;
+        std::string motionName;
+        int motionStatus = 0;
+
+        int32_t ret = client_->CheckMode(robotForm, motionName);
         if (ret == 0) {
             std::cout << "CheckMode succeeded." << std::endl;
         } else {
             std::cout << "CheckMode failed. Error code: " << ret << std::endl;
         }
-        if(motionName.empty())
-        {
+        
+        if (motionName.empty()) {
             std::cout << "The motion control-related service is deactivated." << std::endl;
             motionStatus = 0;
-        }
-        else
-        {
-            std::string serviceName = queryServiceName(robotForm,motionName);
-            std::cout << "Service: "<< serviceName<< " is activate" << std::endl;
+        } else {
+            std::string serviceName = queryServiceName(robotForm, motionName);
+            std::cout << "Service: " << serviceName << " is activate" << std::endl;
             motionStatus = 1;
         }
+
         return motionStatus;
     }
 
     std::string Go2JointController::queryServiceName(std::string form,std::string name)
     {
-        if(form == "0")
-        {
-            if(name == "normal" ) return "sport_mode"; 
-            if(name == "ai" ) return "ai_sport"; 
-            if(name == "advanced" ) return "advanced_sport"; 
-        }
-        else
-        {
-            if(name == "ai-w" ) return "wheeled_sport(go2W)"; 
-            if(name == "normal-w" ) return "wheeled_sport(b2W)";
+        if (form == "0") {
+            if (name == "normal") {
+                return "sport_mode";
+            }
+            if (name == "ai") {
+                return "ai_sport";
+            }
+            if (name == "advanced") {
+                return "advanced_sport";
+            }
+            } else {
+            if (name == "ai-w") {
+                return "wheeled_sport(go2W)";
+            }
+            if (name == "normal-w") {
+                return "wheeled_sport(b2W)";
+            }
         }
         return "";
     }

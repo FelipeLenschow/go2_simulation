@@ -1,4 +1,4 @@
-#pragma once
+// #pragma once
 
 #include <cstdint>
 #include <future>
@@ -8,14 +8,14 @@
 #include <rclcpp/qos.hpp>
 #include <string>
 
-#include "base_client.hpp"
+#include "common/base_client.hpp"
 #include "common/ut_errror.hpp"
 #include "nlohmann/json.hpp"
-#include "patch.hpp"
+#include "common/patch.hpp"
 #include "unitree_api/msg/request.hpp"
 #include "unitree_api/msg/response.hpp"
  
-namespace unitree::robot::g1 {
+namespace unitree::robot::go2 {
  
 const int32_t MOTION_SWITCHER_API_ID_CHECK_MODE = 1001;
 const int32_t MOTION_SWITCHER_API_ID_SELECT_MODE = 1002;
@@ -82,4 +82,4 @@ class MotionSwitchClient {
   }
 };
 
-}  // namespace unitree::robot::g1
+}  // namespace unitree::robot::go2

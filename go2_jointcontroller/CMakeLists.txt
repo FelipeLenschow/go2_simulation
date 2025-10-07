@@ -21,12 +21,12 @@ find_package(pinocchio REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(unitree_go REQUIRED)
-# find_package(unitree_sdk2 REQUIRED)
+find_package(unitree_hg REQUIRED)
+find_package(unitree_api REQUIRED)
+find_package(unitree_ros2 REQUIRED)
 
 ## Check system architecture
 message(STATUS "Current system architecture: ${CMAKE_SYSTEM_PROCESSOR}")
-
-add_subdirectory(unitree_sdk2)
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -44,7 +44,7 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
   pinocchio::pinocchio
-  unitree_sdk2
+  unitree_ros2
 )
  
 ament_target_dependencies(${PROJECT_NAME}
@@ -55,6 +55,9 @@ ament_target_dependencies(${PROJECT_NAME}
   hardware_interface
   std_msgs
   unitree_go
+  unitree_hg
+  unitree_api
+  unitree_ros2
 )
 
 pluginlib_export_plugin_description_file(controller_interface go2_jointcontroller.xml)
