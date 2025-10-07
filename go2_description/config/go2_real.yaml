@@ -11,10 +11,10 @@ controller_manager:
 
 go2_jointcontroller:
   ros__parameters:
-    update_rate: 250
+    update_rate: 500
 
     simulation: false
-    network_interface: eth0
+    network_interface: enp2s0
     control_mode: 1
 
     joints:
@@ -22,7 +22,7 @@ go2_jointcontroller:
 
     gain:
       PD:
-        Kp: [60.0, 60.0, 40.0, 60.0, 60.0, 40.0, 60.0, 60.0, 40.0, 60.0, 60.0, 40.0]
+        Kp: [60.0, 60.0, 60.0, 60.0, 60.0, 60.0, 60.0, 60.0, 60.0, 60.0, 60.0, 60.0]
         Kd: [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
       PDG:
         Kp: [50.0, 50.0, 25.0, 50.0, 50.0, 25.0, 50.0, 50.0, 25.0, 50.0, 50.0, 25.0]

@@ -169,27 +169,27 @@ namespace go2_jointcontroller
             lowCmd_msg.motor_cmd[i].tau = 0;
         }
 
-        if(!get_node()->get_parameter("simulation").get_value<bool>())
-        {
-            ChannelFactory::Instance()->Init(0, get_node()->get_parameter("network_interface").get_value<std::string>());
+        // if(!get_node()->get_parameter("simulation").get_value<bool>())
+        // {
+        //     ChannelFactory::Instance()->Init(0, get_node()->get_parameter("network_interface").get_value<std::string>());
 
-            MotionSwitcherClient msc;
-            /*init MotionSwitcherClient*/
-            msc.SetTimeout(10.0f); 
-            msc.Init();
-            /*Shut down motion control-related service*/
-            while(queryMotionStatus(msc))
-            {
-                std::cout << "Try to deactivate the motion control-related service." << std::endl;
-                int32_t ret = msc.ReleaseMode(); 
-                if (ret == 0) {
-                    std::cout << "ReleaseMode succeeded." << std::endl;
-                } else {
-                    std::cout << "ReleaseMode failed. Error code: " << ret << std::endl;
-                }
-                sleep(5);
-            }
-        }
+        //     MotionSwitcherClient msc;
+        //     /*init MotionSwitcherClient*/
+        //     msc.SetTimeout(10.0f); 
+        //     msc.Init();
+        //     /*Shut down motion control-related service*/
+        //     while(queryMotionStatus(msc))
+        //     {
+        //         std::cout << "Try to deactivate the motion control-related service." << std::endl;
+        //         int32_t ret = msc.ReleaseMode(); 
+        //         if (ret == 0) {
+        //             std::cout << "ReleaseMode succeeded." << std::endl;
+        //         } else {
+        //             std::cout << "ReleaseMode failed. Error code: " << ret << std::endl;
+        //         }
+        //         sleep(5);
+        //     }
+        // }
 
         return CallbackReturn::SUCCESS;
     }
@@ -303,8 +303,11 @@ namespace go2_jointcontroller
                     lowCmd_msg.motor_cmd[j].dq = VelStopF;
                     lowCmd_msg.motor_cmd[j].kp = 0;
                     lowCmd_msg.motor_cmd[j].kd = 0;
-                    lowCmd_msg.motor_cmd[j].tau = std::max(-5.0, std::min(5.0, _effort[j] + _tau[j]));
-                    
+                    auto cmd = std::max(-5.0, std::min(5.0, _effort[j] + _tau[j]));
+                    if (std::isfinite(cmd))
+                        lowCmd_msg.motor_cmd[j].tau = cmd;
+                    else
+                        lowCmd_msg.motor_cmd[j].tau = 0;
                 }
             }
             
