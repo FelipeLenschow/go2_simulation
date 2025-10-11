@@ -18,31 +18,23 @@ namespace go2_lowstates
     class Go2Lowstates : public controller_interface::ControllerInterface
     {
     public:
-        // GO2_LOWSTATES_PUBLIC
         Go2Lowstates();
 
-        // JOINT_STATE_BROADCASTER_PUBLIC
         controller_interface::InterfaceConfiguration command_interface_configuration() const override;
 
-        // GO2_LOWSTATES_PUBLIC
         controller_interface::InterfaceConfiguration state_interface_configuration() const override;
 
-        // GO2_LOWSTATES_PUBLIC
         controller_interface::return_type update(
             const rclcpp::Time &time, const rclcpp::Duration &period) override;
 
-        // GO2_LOWSTATES_PUBLIC
         controller_interface::CallbackReturn on_init() override;
 
-        // GO2_LOWSTATES_PUBLIC
         controller_interface::CallbackReturn on_configure(
             const rclcpp_lifecycle::State &previous_state) override;
 
-        // GO2_LOWSTATES_PUBLIC
         controller_interface::CallbackReturn on_activate(
             const rclcpp_lifecycle::State &previous_state) override;
 
-        // GO2_LOWSTATES_PUBLIC
         controller_interface::CallbackReturn on_deactivate(
             const rclcpp_lifecycle::State &previous_state) override;
 

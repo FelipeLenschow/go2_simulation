@@ -1,11 +1,8 @@
 #include "go2_jointcontroller/go2_jointcontroller.hpp"
-// #include <unitree/robot/channel/channel_publisher.hpp>
-// #include <unitree/robot/channel/channel_subscriber.hpp>
-
-#include <string>
 
 constexpr double PosStopF = (2.146E+9f);
 constexpr double VelStopF = (16000.0f);
+
 using namespace unitree::robot;
 
 namespace go2_jointcontroller
@@ -477,8 +474,6 @@ namespace go2_jointcontroller
         return "";
     }
 }
-
-
 
 #include <pluginlib/class_list_macros.hpp>
 PLUGINLIB_EXPORT_CLASS(

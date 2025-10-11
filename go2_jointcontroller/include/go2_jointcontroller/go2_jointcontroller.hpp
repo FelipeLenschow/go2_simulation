@@ -21,8 +21,6 @@
 
 #include "unitree_ros2/include/go2_motion_switch_client.hpp"
 
-// using namespace unitree::robot::go2;
-
 namespace go2_jointcontroller
 {
     using lowCmd = unitree_go::msg::LowCmd;
@@ -31,31 +29,23 @@ namespace go2_jointcontroller
     class Go2JointController : public controller_interface::ControllerInterface
     {
     public:
-        // GO2_JOINTCONTROLLER_PUBLIC
         Go2JointController();
 
-        // GO2_JOINTCONTROLLER_PUBLIC
         controller_interface::InterfaceConfiguration command_interface_configuration() const override;
 
-        // GO2_JOINTCONTROLLER_PUBLIC
         controller_interface::InterfaceConfiguration state_interface_configuration() const override;
 
-        // GO2_JOINTCONTROLLER_PUBLIC
         controller_interface::return_type update(
             const rclcpp::Time &time, const rclcpp::Duration &period) override;
 
-        // GO2_JOINTCONTROLLER_PUBLIC
         controller_interface::CallbackReturn on_init() override;
 
-        // GO2_JOINTCONTROLLER_PUBLIC
         controller_interface::CallbackReturn on_configure(
             const rclcpp_lifecycle::State &previous_state) override;
 
-        // GO2_JOINTCONTROLLER_PUBLIC
         controller_interface::CallbackReturn on_activate(
             const rclcpp_lifecycle::State &previous_state) override;
 
-        // GO2_JOINTCONTROLLER_PUBLIC
         controller_interface::CallbackReturn on_deactivate(
             const rclcpp_lifecycle::State &previous_state) override;
 

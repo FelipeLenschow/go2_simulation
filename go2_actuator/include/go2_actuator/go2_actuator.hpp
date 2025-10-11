@@ -12,7 +12,7 @@
 #include <filesystem>
 #include <pinocchio/algorithm/model.hpp>
 #include <pinocchio/algorithm/rnea.hpp>
-#include "pinocchio/parsers/urdf.hpp"
+#include <pinocchio/parsers/urdf.hpp>
 
 #include "ament_index_cpp/get_package_share_directory.hpp"
 
@@ -23,31 +23,23 @@ namespace go2_actuator
     class Go2Actuator : public controller_interface::ControllerInterface
     {
     public:
-        // GO2_ACTUATOR_PUBLIC
         Go2Actuator();
 
-        // GO2_ACTUATOR_PUBLIC
         controller_interface::InterfaceConfiguration command_interface_configuration() const override;
 
-        // GO2_ACTUATOR_PUBLIC
         controller_interface::InterfaceConfiguration state_interface_configuration() const override;
 
-        // GO2_ACTUATOR_PUBLIC
         controller_interface::return_type update(
             const rclcpp::Time &time, const rclcpp::Duration &period) override;
 
-        // GO2_ACTUATOR_PUBLIC
         controller_interface::CallbackReturn on_init() override;
 
-        // GO2_ACTUATOR_PUBLIC
         controller_interface::CallbackReturn on_configure(
             const rclcpp_lifecycle::State &previous_state) override;
 
-        // GO2_ACTUATOR_PUBLIC
         controller_interface::CallbackReturn on_activate(
             const rclcpp_lifecycle::State &previous_state) override;
 
-        // GO2_ACTUATOR_PUBLIC
         controller_interface::CallbackReturn on_deactivate(
             const rclcpp_lifecycle::State &previous_state) override;
 
@@ -81,9 +73,6 @@ namespace go2_actuator
         std::mutex mutex_actuator;
 
         rclcpp::Subscription<lowCmd>::SharedPtr joints_reference_subscriber_;
-
-    //     float _startPos[12] = {0.0, 1.36, -2.65, 0.0, 1.36, -2.65, -0.2, 1.36, -2.65, 0.2, 1.36, -2.65};
-
 
     };
 

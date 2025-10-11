@@ -15,7 +15,7 @@ Go2Remap::Go2Remap() : Node("go2_remap")
     joint_state_pub_ = this->create_publisher<sensor_msgs::msg::JointState>("/joint_states", 10);
 }
 
-// 🔵 **Pose Callback (Updates `world -> odom` dynamically)**
+// **Pose Callback (Updates `world -> odom` dynamically)**
 void Go2Remap::pose_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
 {
     std::lock_guard<std::mutex> lock(tf_mutex_);
@@ -26,7 +26,7 @@ void Go2Remap::pose_callback(const geometry_msgs::msg::PoseStamped::SharedPtr ms
         timestamp = this->now();
     }
 
-    // ✅ **Continuously Update `world -> odom` (DYNAMIC)**
+    // **Continuously Update `world -> odom` (DYNAMIC)**
     world_odom_tf_.header.stamp = timestamp;
     world_odom_tf_.header.frame_id = "world";
     world_odom_tf_.child_frame_id = "odom";
@@ -36,7 +36,7 @@ void Go2Remap::pose_callback(const geometry_msgs::msg::PoseStamped::SharedPtr ms
     world_odom_tf_.transform.rotation = msg->pose.orientation;
 }
 
-// 🔵 **Joint Callback (Static `odom -> base_link` + Joints)**
+// **Joint Callback (Static `odom -> base_link` + Joints)**
 void Go2Remap::joint_callback(const unitree_go::msg::LowState::SharedPtr msg)
 {
     std::lock_guard<std::mutex> lock(tf_mutex_);
@@ -87,7 +87,7 @@ void Go2Remap::joint_callback(const unitree_go::msg::LowState::SharedPtr msg)
         tf_transforms.push_back(tf_msg);
     }
 
-    // 🚀 **Publish All Transforms & Joint States**
+    // **Publish All Transforms & Joint States**
     tf_broadcaster_->sendTransform(tf_transforms);
     joint_state_msg.name = joint_names_;
     joint_state_msg.position = joint_positions;
@@ -96,7 +96,7 @@ void Go2Remap::joint_callback(const unitree_go::msg::LowState::SharedPtr msg)
     joint_state_pub_->publish(joint_state_msg);
 }
 
-// 🔵 **Main**
+// **Main**
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
