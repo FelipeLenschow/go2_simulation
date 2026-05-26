@@ -113,6 +113,9 @@ namespace go2_jointcontroller
         }
 
         control_mode = get_node()->get_parameter("control_mode").get_value<int>();
+        RCLCPP_INFO(logger, "==================================================");
+        RCLCPP_INFO(logger, "   STARTING SIMULATION WITH CONTROL MODE: %d   ", control_mode);
+        RCLCPP_INFO(logger, "==================================================");
 
         selectControlMode(control_mode);
 
