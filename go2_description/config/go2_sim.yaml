@@ -59,6 +59,7 @@ go2_lowstates:
     state_interfaces:
       - position
       - velocity
+      - effort
 
 go2_jointcontroller:
   ros__parameters:

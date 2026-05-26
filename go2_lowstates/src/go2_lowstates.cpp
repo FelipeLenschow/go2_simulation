@@ -202,7 +202,7 @@ namespace go2_lowstates
             lowStates_msg.motor_state[index].dq = joint_state_interface_[1][index].get().get_optional().value_or(0);
 
             // get the joint effort
-            lowStates_msg.motor_state[index].tau_est = tau[index];
+            lowStates_msg.motor_state[index].tau_est = joint_state_interface_[2][index].get().get_optional().value_or(0);
         }
     }
 }
