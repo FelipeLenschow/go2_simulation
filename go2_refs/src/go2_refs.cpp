@@ -5,9 +5,18 @@
 #include "unitree_go/msg/low_state.hpp"
 #include "cmath"
 
+#include <vector>
+#include <array>
+
 using namespace std::chrono_literals;
+
 using lowCmd = unitree_go::msg::LowCmd;
 using lowStates = unitree_go::msg::LowState;
+
+struct TrajectoryPoint {
+    std::array<float, 12> pos;
+    double duration_ms;
+};
 
 class MinimalPublisher : public rclcpp::Node
 {
@@ -34,18 +43,18 @@ public:
                 }
             });
 
-        // Inicializa posições
-        float startPos[12]   = {0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65,  0.0, 1.50, -2.65}; //fold
-        float targetPos1[12] = {0.0, 0.80, -1.36, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65,  0.0, 1.50, -2.65}; //FL extend
-        float targetPos2[12] = {0.0, 0.80, -1.36, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65,  0.0, 0.80, -1.36}; //FL and RR extend 
+        // Inicializa posições (0 a 11)
+        std::array<float, 12> foldPos = {0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65,  0.0, 1.50, -2.65};
+        std::array<float, 12> extendFR = {0.0, -1.00, -1.00, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65,  0.0, 1.50, -2.65};
 
-        std::copy(std::begin(startPos), std::end(startPos), sequence[0]);
-        std::copy(std::begin(targetPos1), std::end(targetPos1), sequence[1]);
-        std::copy(std::begin(startPos), std::end(startPos), sequence[2]);
-        std::copy(std::begin(targetPos2), std::end(targetPos2), sequence[3]);
-        
-        // std::copy(std::begin(sequence[0]), std::end(sequence[0]), _startPos);
-        std::copy(std::begin(sequence[0]), std::end(sequence[0]), _desPos);
+        sequence.push_back({foldPos, 10000.0});   // Vai para fold em 10 segundos
+        sequence.push_back({foldPos, 5000.0});   // Continua em fold por 3 segundos
+        sequence.push_back({extendFR, 15000.0}); // Estende a perna em 15 segundos
+        sequence.push_back({foldPos, 15000.0});  // Volta para fold em 15 segundos
+        // sequence.push_back({extendFR, 1500.0});  // Degrau rápido na perna em 1.5 segundo
+        // sequence.push_back({foldPos, 1500.0});   // Degrau rápido de volta em 1.5 segundo
+
+        std::copy(sequence[0].pos.begin(), sequence[0].pos.end(), _desPos);
 
         timer_ = this->create_wall_timer(1ms, std::bind(&MinimalPublisher::publish_message, this));
     }
@@ -58,8 +67,9 @@ private:
         auto low_cmd = lowCmd();
         motion_time++;
 
-        // Normalização do tempo para interpolação (0 a 1)
-        double rate = std::min(1.0, rate_count / 5000.0);
+        // Normalização do tempo para interpolação (0 a 1) baseada na duração do passo atual
+        double duration = sequence[current_step].duration_ms;
+        double rate = std::min(1.0, rate_count / duration);
         rate_count++;
 
 
@@ -71,13 +81,13 @@ private:
 
         publisher_->publish(low_cmd);
 
-        // Alternância entre posições a cada 50 iterações
+        // Alternância entre posições quando a interpolação terminar
         if (rate >= 1.0)
         {
             // Continua normalmente para o próximo destino
-            current_step = (current_step + 1) % sequence_size;
+            current_step = (current_step + 1) % sequence.size();
             std::copy(std::begin(_desPos), std::end(_desPos), _startPos);
-            std::copy(std::begin(sequence[current_step]), std::end(sequence[current_step]), _desPos);
+            std::copy(sequence[current_step].pos.begin(), sequence[current_step].pos.end(), _desPos);
             rate_count = 0;
         }
 
@@ -91,15 +101,13 @@ private:
     bool paused = false;
 
     int current_step = 0;
-    static const int sequence_size = 4;
-    static const int pause_duration = 400; // número de ciclos de 5ms para pausar (2s)
 
     float _q[12];
     float _qd[12];
 
     float _startPos[12];
     float _desPos[12];
-    float sequence[sequence_size][12];
+    std::vector<TrajectoryPoint> sequence;
 
     bool started = false;
 };
