@@ -29,7 +29,7 @@ public:
         publisher_ = this->create_publisher<lowCmd>("/go2_jointcontroller/JointControllerReferences", 1);
 
         lowstate_subscriber_ = this->create_subscription<lowStates>(
-            "/lowstate", rclcpp::SystemDefaultsQoS(),
+            "/lowstate", rclcpp::QoS(rclcpp::KeepLast(10)).best_effort(),
             [this](const std::shared_ptr<lowStates> msg) -> void
             {
                 if (!started)

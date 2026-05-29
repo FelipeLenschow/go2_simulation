@@ -135,7 +135,7 @@ namespace go2_lowstates
                 lowStates_msg.imu_state.rpy[2] = yaw;
             });
 
-        go2_lowstates_publisher = get_node()->create_publisher<lowStates>("/lowstate", 10);
+        go2_lowstates_publisher = get_node()->create_publisher<lowStates>("/lowstate", rclcpp::QoS(rclcpp::KeepLast(10)).best_effort());
         return CallbackReturn::SUCCESS;
     }
 

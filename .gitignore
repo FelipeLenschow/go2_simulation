@@ -1,2 +1,5 @@
 .vscode
 Data/Sim/**/rosbag2*/
+build/
+install/
+log/

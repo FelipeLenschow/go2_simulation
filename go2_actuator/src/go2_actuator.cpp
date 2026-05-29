@@ -155,7 +155,7 @@ namespace go2_actuator
         }
 
         joints_reference_subscriber_ = get_node()->create_subscription<lowCmd>(
-            "/lowcmd", rclcpp::SystemDefaultsQoS(),
+            "/lowcmd", rclcpp::QoS(rclcpp::KeepLast(10)).best_effort(),
             [this](const std::shared_ptr<lowCmd> msg) -> void
             {
                 std::lock_guard<std::mutex> lock(this->mutex_actuator);

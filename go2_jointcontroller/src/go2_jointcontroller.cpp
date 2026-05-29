@@ -123,7 +123,7 @@ namespace go2_jointcontroller
 
         // TODO: use the name of topic from the YAML file
         lowstate_subscriber_ = get_node()->create_subscription<lowStates>(
-            "/lowstate", rclcpp::SystemDefaultsQoS(),
+            "/lowstate", rclcpp::QoS(rclcpp::KeepLast(10)).best_effort(),
             [this](const std::shared_ptr<lowStates> msg) -> void
             {
                 std::lock_guard<std::mutex> lock(this->mutex_controller);
