@@ -47,10 +47,9 @@ public:
         std::array<float, 12> foldPos = {0.0, 1.50, -2.65, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65,  0.0, 1.50, -2.65};
         std::array<float, 12> extendFR = {0.0, -1.00, -1.00, 0.0, 1.50, -2.65, 0.0, 1.50, -2.65,  0.0, 1.50, -2.65};
 
-        sequence.push_back({foldPos, 10000.0});   // Vai para fold em 10 segundos
-        sequence.push_back({foldPos, 5000.0});   // Continua em fold por 3 segundos
-        sequence.push_back({extendFR, 15000.0}); // Estende a perna em 15 segundos
-        sequence.push_back({foldPos, 15000.0});  // Volta para fold em 15 segundos
+        sequence.push_back({foldPos, 5000.0});   // Vai para fold em 10 segundos
+        sequence.push_back({extendFR, 5000.0}); // Estende a perna em 15 segundos
+        sequence.push_back({foldPos, 5000.0});  // Volta para fold em 15 segundos
         // sequence.push_back({extendFR, 1500.0});  // Degrau rápido na perna em 1.5 segundo
         // sequence.push_back({foldPos, 1500.0});   // Degrau rápido de volta em 1.5 segundo
 
