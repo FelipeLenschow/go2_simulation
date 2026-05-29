@@ -1,0 +1,4 @@
+
+sudo docker run -it --rm --network host -v ~/go2_simulation:/home/unitree/go2_simulation -w /home/unitree/go2_simulation go2_cont_docker
+ 
+ros2 bag record /lowcmd /go2_jointcontroller/JointControllerReferences /lowstate
